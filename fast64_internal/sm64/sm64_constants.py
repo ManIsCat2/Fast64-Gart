@@ -833,8 +833,8 @@ enumBehaviourPresets = [
     ("13002ea8", "Yellow Ball", "Yellow Ball"),
     ("1300091c", "Yellow Coin", "Yellow Coin"),
     ("13004538", "Yoshi", "Yoshi"),
-    ("Ambient",  "LE Ambient Light", "LE Ambient Light"),
-    ("Point",    "LE Point Light", "LE Point Light")
+    ("14000000",  "LE Ambient Light", "LE Ambient Light"),
+    ("14000001",  "LE Point Light", "LE Point Light")
 ]
 enumModelIDs = [
     ("Custom", "Custom", "Custom"),
