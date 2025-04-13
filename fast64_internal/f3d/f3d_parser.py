@@ -518,13 +518,13 @@ class F3DContext:
 
         # Here these are ints, but when parsing the values will be normalized.
         self.lights.l = [
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
         ]
         self.lights.a = Ambient([0, 0, 0])
         self.numLights: int = 0
@@ -587,13 +587,13 @@ class F3DContext:
 
         self.lights = Lights("lights_context", self.f3d)
         self.lights.l = [
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
-            Light([0, 0, 0], [0x49, 0x49, 0x49]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
+            Light([0, 0, 0], [0x28, 0x28, 0x28]),
         ]
         self.lights.a = Ambient([0, 0, 0])
         self.numLights = 0
@@ -904,6 +904,8 @@ class F3DContext:
             rdp_settings.g_fog = value
         if bitFlags & self.f3d.G_LIGHTING:
             rdp_settings.g_lighting = value
+        if bitFlags & self.f3d.G_LIGHTING_ENGINE_EXT:
+            rdp_settings.g_lighting_engine = value
         if bitFlags & self.f3d.G_TEXTURE_GEN:
             rdp_settings.g_tex_gen = value
         if bitFlags & self.f3d.G_TEXTURE_GEN_LINEAR:
@@ -1285,7 +1287,7 @@ class F3DContext:
             lightList.append(Light(color, direction))
 
         while len(lightList) < 7:
-            lightList.append(Light(Vector([0, 0, 0]), Vector([0x49, 0x49, 0x49])))
+            lightList.append(Light(Vector([0, 0, 0]), Vector([0x28, 0x28, 0x28])))
 
         # normally a and l are Ambient and Light objects,
         # but here they will be a color and blender light object array.

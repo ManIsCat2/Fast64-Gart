@@ -88,6 +88,10 @@ from ..f3d.f3d_gbi import (
     GfxListTag,
     GfxMatWriteMethod,
     DPSetAlphaCompare,
+    DPSetTextureImage,
+    DPSetTile,
+    DPLoadBlock,
+    DPSetTileSize,
     FModel,
     FMesh,
     SPVertex,
@@ -116,6 +120,9 @@ from .sm64_geolayout_classes import (
     RotateNode,
     TranslateRotateNode,
     FunctionNode,
+    CoopRecolorCommands,
+    CoopMirrorCommands,
+    CoopMirrorCommands2,
     CustomNode,
     BillboardNode,
     ScaleNode,
@@ -336,56 +343,74 @@ def getCameraObj(camera):
 
 
 def appendRevertToGeolayout(geolayoutGraph, fModel):
-    materialRevert = GfxList(
-        fModel.name + "_" + "material_revert_render_settings", GfxListTag.MaterialRevert, fModel.DLFormat
-    )
-    revertMatAndEndDraw(materialRevert, [DPSetEnvColor(0xFF, 0xFF, 0xFF, 0xFF), DPSetAlphaCompare("G_AC_NONE")])
+    if bpy.context.scene.fast64.sm64.add_coop_reverts:
+        fModel.materialRevert = GfxList(
+            fModel.name + "_" + "material_revert_render_settings", GfxListTag.MaterialRevert, fModel.DLFormat
+        )
+        revertMatAndEndDraw(fModel.materialRevert, [DPSetEnvColor(0xFF, 0xFF, 0xFF, 0xFF), DPSetAlphaCompare("G_AC_NONE"), DPSetTextureImage("G_IM_FMT_RGBA", "G_IM_SIZ_16b_LOAD_BLOCK", 1, 0), DPSetTile("G_IM_FMT_RGBA", "G_IM_SIZ_16b_LOAD_BLOCK", 0, 0, 7, 0, ["G_TX_WRAP", "G_TX_NOMIRROR"], 0, 0, ["G_TX_WRAP ", "G_TX_NOMIRROR"], 0, 0),DPLoadBlock(7, 0, 0, 1023, 256),DPSetTile('G_IM_FMT_RGBA', 'G_IM_SIZ_16b', 8, 0, 0, 0, ['G_TX_CLAMP' , 'G_TX_NOMIRROR'], 5, 0, ['G_TX_CLAMP' , 'G_TX_NOMIRROR'], 5, 0),DPSetTileSize(0, 0, 0, 124, 124),DPSetTextureImage("G_IM_FMT_RGBA", "G_IM_SIZ_16b_LOAD_BLOCK", 1, 0),DPSetTile('G_IM_FMT_RGBA', 'G_IM_SIZ_16b_LOAD_BLOCK', 0, 256, 6, 0, ['G_TX_WRAP' ,'G_TX_NOMIRROR'], 0, 0, ['G_TX_WRAP' ,'G_TX_NOMIRROR'], 0, 0),DPLoadBlock(6, 0, 0, 1023, 256),DPSetTile('G_IM_FMT_RGBA', 'G_IM_SIZ_16b', 8, 256, 1, 0, ['G_TX_CLAMP' ,'G_TX_NOMIRROR'], 5, 0,  ['G_TX_CLAMP' ,'G_TX_NOMIRROR'], 5, 0),DPSetTileSize(1, 0, 0, 124, 124)])
 
-    # walk the geo layout graph to find the last used DL for each layer
-    # each switch child will be considered a last used DL, unless subsequent
-    # DL is drawn outside switch root
-    def walk(node, last_gfx_list: list[dict]):
-        base_node = node.node
-        if type(base_node) == JumpNode:
-            if base_node.geolayout:
-                for node in base_node.geolayout.nodes:
-                    last_gfx_list = walk(node, last_gfx_list)
-        fMesh = getattr(base_node, "fMesh", None)
-        if fMesh:
-            cmd_list = fMesh.drawMatOverrides.get(base_node.override_hash, None) or fMesh.draw
-            for draw_layer_dict in last_gfx_list:
-                draw_layer_dict[base_node.drawLayer] = cmd_list
-        switch_gfx_lists = []
-        for child in node.children:
-            if type(base_node) == SwitchNode:
-                switch_gfx_lists.extend(walk(child, [dict()]))
-            else:
-                last_gfx_list = walk(child, last_gfx_list)
-        # update the non switch nodes with the last switch node of each layer drawn
-        # that node will be overridden by at least one of the switch nodes
-        # for that layer, later items in the list will cover unique switch nodes
-        if switch_gfx_lists:
-            for draw_layer_dict in last_gfx_list:
-                draw_layer_dict.update(switch_gfx_lists[-1])
-            last_gfx_list.extend(switch_gfx_lists)
-        return last_gfx_list
+        # Get all draw layers, turn layers into strings (some are ints), deduplicate using a set
+        drawLayers = set(str(layer) for layer in geolayoutGraph.getDrawLayers())
 
-    for node in geolayoutGraph.startGeolayout.nodes:
-        last_gfx_list = walk(node, [dict()])
+        # Revert settings in each draw layer
+        for layer in sorted(drawLayers):  # Must be sorted, otherwise ordering is random due to `set` behavior
+            dlNode = DisplayListNode(layer)
+            dlNode.DLmicrocode = fModel.materialRevert
 
-    # Revert settings in each unique draw layer
-    reverted_gfx_lists = set()
-    for draw_layer_dict in last_gfx_list:
-        for gfx_list in draw_layer_dict.values():
-            if gfx_list in reverted_gfx_lists:
-                continue
-            # remove SPEndDisplayList from gfx_list, materialRevert has its own SPEndDisplayList cmd
-            while SPEndDisplayList() in gfx_list.commands:
-                gfx_list.commands.remove(SPEndDisplayList())
+            # Assume first node is start render area
+            # This is important, since a render area groups things separately.
+            # If we added these nodes outside the render area, they would not happen
+            # right after the nodes inside.
+            geolayoutGraph.startGeolayout.nodes[0].children.append(TransformNode(dlNode))
+    else:
+        materialRevert = GfxList(
+        fModel.name + "_" + "material_revert_render_settings", GfxListTag.MaterialRevert, fModel.DLFormat)
+        revertMatAndEndDraw(materialRevert, [DPSetEnvColor(0xFF, 0xFF, 0xFF, 0xFF), DPSetAlphaCompare("G_AC_NONE")])
 
-            gfx_list.commands.extend(materialRevert.commands)
-            reverted_gfx_lists.add(gfx_list)
+        # walk the geo layout graph to find the last used DL for each layer
+        # each switch child will be considered a last used DL, unless subsequent
+        # DL is drawn outside switch root
+        def walk(node, last_gfx_list: list[dict]):
+            base_node = node.node
+            if type(base_node) == JumpNode:
+                if base_node.geolayout:
+                    for node in base_node.geolayout.nodes:
+                        last_gfx_list = walk(node, last_gfx_list)
+            fMesh = getattr(base_node, "fMesh", None)
+            if fMesh:
+                cmd_list = fMesh.drawMatOverrides.get(base_node.override_hash, None) or fMesh.draw
+                for draw_layer_dict in last_gfx_list:
+                    draw_layer_dict[base_node.drawLayer] = cmd_list
+            switch_gfx_lists = []
+            for child in node.children:
+                if type(base_node) == SwitchNode:
+                    switch_gfx_lists.extend(walk(child, [dict()]))
+                else:
+                    last_gfx_list = walk(child, last_gfx_list)
+            # update the non switch nodes with the last switch node of each layer drawn
+            # that node will be overridden by at least one of the switch nodes
+            # for that layer, later items in the list will cover unique switch nodes
+            if switch_gfx_lists:
+                for draw_layer_dict in last_gfx_list:
+                    draw_layer_dict.update(switch_gfx_lists[-1])
+                last_gfx_list.extend(switch_gfx_lists)
+            return last_gfx_list
 
+        for node in geolayoutGraph.startGeolayout.nodes:
+            last_gfx_list = walk(node, [dict()])
+
+        # Revert settings in each unique draw layer
+        reverted_gfx_lists = set()
+        for draw_layer_dict in last_gfx_list:
+            for gfx_list in draw_layer_dict.values():
+                if gfx_list in reverted_gfx_lists:
+                    continue
+                # remove SPEndDisplayList from gfx_list, materialRevert has its own SPEndDisplayList cmd
+                while SPEndDisplayList() in gfx_list.commands:
+                    gfx_list.commands.remove(SPEndDisplayList())
+
+                gfx_list.commands.extend(materialRevert.commands)
+                reverted_gfx_lists.add(gfx_list)
 
 # Convert to Geolayout
 def convertArmatureToGeolayout(armatureObj, obj, convertTransformMatrix, camera, name, DLFormat, convertTextureData):
@@ -1702,6 +1727,12 @@ def processBone(
         if bone.geo_func == "":
             raise PluginError("Function bone " + boneName + " function value is empty.")
         node = FunctionNode(bone.geo_func, bone.func_param)
+    elif bone.geo_cmd == "RecolorCommands":
+        node = CoopRecolorCommands(bone.geo_func, bone.func_param)
+    elif bone.geo_cmd == "CoopMirrorCommands":
+        node = CoopMirrorCommands(bone.geo_func, bone.func_param)
+    elif bone.geo_cmd == "CoopMirrorCommands2":
+        node = CoopMirrorCommands2(bone.geo_func, bone.func_param)
     elif bone.geo_cmd == "HeldObject":
         if bone.geo_func == "":
             raise PluginError("Held object bone " + boneName + " function value is empty.")
@@ -2869,6 +2900,11 @@ class SM64_ExportGeolayoutObject(ObjectDataExporter):
                     props.is_actor_custom_export,
                     DLFormat.Static,
                 )
+                if props.is_actor_custom_export and props.delete_all_bins:
+                    for filename in os.listdir(export_path):
+                        file_path = os.path.join(export_path, filename)
+                        if os.path.isfile(file_path) and filename.endswith('.bin'):
+                            os.remove(file_path)
                 self.report({"INFO"}, "Success!")
             elif context.scene.fast64.sm64.export_type == "Insertable Binary":
                 exportGeolayoutObjectInsertableBinary(
@@ -3066,6 +3102,11 @@ class SM64_ExportGeolayoutArmature(bpy.types.Operator):
                     props.is_actor_custom_export,
                     DLFormat.Static,
                 )
+                if props.is_actor_custom_export and props.delete_all_bins:
+                    for filename in os.listdir(export_path):
+                        file_path = os.path.join(export_path, filename)
+                        if os.path.isfile(file_path) and filename.endswith('.bin'):
+                            os.remove(file_path)
                 starSelectWarning(self, fileStatus)
                 self.report({"INFO"}, "Success!")
             elif context.scene.fast64.sm64.export_type == "Insertable Binary":

@@ -58,6 +58,9 @@ class SM64_Animation:
         self.indices = SM64_ShortArray(name + "_indices", False)
         self.values = SM64_ShortArray(name + "_values", True)
 
+        if bpy.context.scene.smluaAnimation:
+            self.valuesandindices = self.values.to_c() + "\n" + self.indices.to_c()
+
     def get_ptr_offsets(self, isDMA):
         return [12, 16] if not isDMA else []
 
@@ -87,7 +90,11 @@ class SM64_ShortArray:
         return data
 
     def to_c(self):
-        data = "static const " + ("s" if self.signed else "u") + "16 " + self.name + "[] = {\n\t"
+        if bpy.context.scene.smluaAnimation:
+            data = "smlua_anim_util_register_animation(" +  self.name + ", " + "\n\t"
+        else:
+            data = "static const " + ("s" if self.signed else "u") + "16 " + self.name + "[] = {\n\t"
+
         wrapCounter = 0
         for short in self.shortData:
             data += "0x" + format(short, "04X") + ", "
@@ -95,7 +102,10 @@ class SM64_ShortArray:
             if wrapCounter > 8:
                 data += "\n\t"
                 wrapCounter = 0
-        data += "\n};\n"
+        if bpy.context.scene.smluaAnimation:
+            data += "\n);\n"
+        else:
+            data += "\n};\n"
         return data
 
 
@@ -209,71 +219,103 @@ def getLastKeyframeTime(keyframes):
 def exportAnimationC(armatureObj, loopAnim, dirPath, dirName, groupName, customExport, headerType, levelName):
     dirPath, texDir = getExportDir(customExport, dirPath, headerType, levelName, "", dirName)
 
-    sm64_anim = exportAnimationCommon(armatureObj, loopAnim, dirName + "_anim")
+    if bpy.context.scene.smluaAnimation:
+        sm64_anim = exportAnimationCommon(armatureObj, loopAnim, dirName)
+    else:
+        sm64_anim = exportAnimationCommon(armatureObj, loopAnim, dirName + "_anim")
     animName = armatureObj.animation_data.action.name
 
-    geoDirPath = os.path.join(dirPath, toAlnum(dirName))
-    if not os.path.exists(geoDirPath):
-        os.mkdir(geoDirPath)
+    
+    if not bpy.context.scene.smluaAnimation:
+        geoDirPath = os.path.join(dirPath, toAlnum(dirName))
+        if not os.path.exists(geoDirPath):
+            os.mkdir(geoDirPath)
 
-    animDirPath = os.path.join(geoDirPath, "anims")
-    if not os.path.exists(animDirPath):
-        os.mkdir(animDirPath)
+    if not bpy.context.scene.smluaAnimation:
+        animDirPath = os.path.join(geoDirPath, "anims")
+        if not os.path.exists(animDirPath):
+            os.mkdir(animDirPath)
+
 
     animsName = dirName + "_anims"
-    animFileName = "anim_" + toAlnum(animName) + ".inc.c"
-    animPath = os.path.join(animDirPath, animFileName)
+    if bpy.context.scene.smluaAnimation:
+        animFileName = dirName + ".lua"
+        animPath = os.path.join(dirPath, animFileName)
+    else:
+        animFileName = "anim_" + toAlnum(animName) + ".inc.c"
+        animPath = os.path.join(animDirPath, animFileName)
 
-    data = sm64_anim.to_c()
-    outFile = open(animPath, "w", newline="\n")
-    outFile.write(data.source)
+    if bpy.context.scene.smluaAnimation:
+        data = sm64_anim#.to_c()
+        outFile = open(animPath, "w", newline="\n")
+            #+ " = {\n"
+            #+ "\t"
+            #+ str(self.repetitions)
+            #+ ",\n"
+           # + "\t"
+           # + str(self.marioYOffset)
+           # + ",\n"
+           # + "\t0,\n"
+           # + "\t"
+           # + str(int(round(self.frameInterval[0])))
+          #  + ",\n"
+           # + "\t"
+           # + str(int(round(self.frameInterval[1] - 1)))
+        beforeIndiciandValue = str(data.header.repetitions) +  ", " + str(data.header.marioYOffset) + ", " "0" +  ", " + str(int(round(data.header.frameInterval[0]))) +  ", " + str(int(round(data.header.frameInterval[1] - 1))) +  ", "
+        outFile.write((f"smlua_anim_util_register_animation('{dirName}'" + ",") + beforeIndiciandValue + "{" +  data.values.to_c().replace(");", "").replace("smlua_anim_util_register_animation(" + data.name + "_values,", "") + "}," + "{" + data.indices.to_c().replace(data.name + "_indices", "").replace("smlua_anim_util_register_animation", "").replace("(,", "").replace(");", "") + "}" + ");")
+    else:
+        data = sm64_anim.to_c()
+        outFile = open(animPath, "w", newline="\n")
+        outFile.write(data.source)
     outFile.close()
 
-    headerPath = os.path.join(geoDirPath, "anim_header.h")
-    headerFile = open(headerPath, "w", newline="\n")
-    headerFile.write("extern const struct Animation *const " + animsName + "[];\n")
-    headerFile.close()
+    if not bpy.context.scene.smluaAnimation:
+        headerPath = os.path.join(geoDirPath, "anim_header.h")
+        headerFile = open(headerPath, "w", newline="\n")
+        headerFile.write("extern const struct Animation *const " + animsName + "[];\n")
+        headerFile.close()
 
     # write to data.inc.c
-    dataFilePath = os.path.join(animDirPath, "data.inc.c")
-    if not os.path.exists(dataFilePath):
-        dataFile = open(dataFilePath, "w", newline="\n")
-        dataFile.close()
-    writeIfNotFound(dataFilePath, '#include "' + animFileName + '"\n', "")
+        dataFilePath = os.path.join(animDirPath, "data.inc.c")
+        if not os.path.exists(dataFilePath):
+            dataFile = open(dataFilePath, "w", newline="\n")
+            dataFile.close()
+        writeIfNotFound(dataFilePath, '#include "' + animFileName + '"\n', "")
 
     # write to table.inc.c
-    tableFilePath = os.path.join(animDirPath, "table.inc.c")
+        tableFilePath = os.path.join(animDirPath, "table.inc.c")
 
     # if table doesn´t exist, create one
-    if not os.path.exists(tableFilePath):
-        tableFile = open(tableFilePath, "w", newline="\n")
-        tableFile.write("const struct Animation *const " + animsName + "[] = {\n\tNULL,\n};\n")
-        tableFile.close()
+        if not os.path.exists(tableFilePath):
+            tableFile = open(tableFilePath, "w", newline="\n")
+            tableFile.write("const struct Animation *const " + animsName + "[] = {\n\tNULL,\n};\n")
+            tableFile.close()
 
-    stringData = ""
-    with open(tableFilePath, "r") as f:
-        stringData = f.read()
 
-    # if animation header isn´t already in the table then add it.
-    if sm64_anim.header.name not in stringData:
-        # search for the NULL value which represents the end of the table
-        # (this value is not present in vanilla animation tables)
-        footerIndex = stringData.rfind("\tNULL,\n")
+        stringData = ""
+        with open(tableFilePath, "r") as f:
+            stringData = f.read()
 
-        # if the null value cant be found, look for the end of the array
-        if footerIndex == -1:
-            footerIndex = stringData.rfind("};")
+        # if animation header isn´t already in the table then add it.
+        if sm64_anim.header.name not in stringData:
+            # search for the NULL value which represents the end of the table
+            # (this value is not present in vanilla animation tables)
+            footerIndex = stringData.rfind("\tNULL,\n")
 
-            # if that can´t be found then throw an error.
+            # if the null value cant be found, look for the end of the array
             if footerIndex == -1:
-                raise PluginError("Animation table´s footer does not seem to exist.")
+                footerIndex = stringData.rfind("};")
 
-            stringData = stringData[:footerIndex] + "\tNULL,\n" + stringData[footerIndex:]
+                # if that can´t be found then throw an error.
+                if footerIndex == -1:
+                    raise PluginError("Animation table´s footer does not seem to exist.")
 
-        stringData = stringData[:footerIndex] + f"\t&{sm64_anim.header.name},\n" + stringData[footerIndex:]
+                stringData = stringData[:footerIndex] + "\tNULL,\n" + stringData[footerIndex:]
 
-        with open(tableFilePath, "w") as f:
-            f.write(stringData)
+            stringData = stringData[:footerIndex] + f"\t&{sm64_anim.header.name},\n" + stringData[footerIndex:]
+
+            with open(tableFilePath, "w") as f:
+                f.write(stringData)
 
     if not customExport:
         if headerType == "Actor":
@@ -872,6 +914,7 @@ class SM64_ExportAnimPanel(SM64_Panel):
 
         if context.scene.fast64.sm64.export_type == "C":
             col.prop(context.scene, "animCustomExport")
+            col.prop(context.scene, "smluaAnimation")
             if context.scene.animCustomExport:
                 col.prop(context.scene, "animExportPath")
                 prop_split(col, context.scene, "animName", "Name")
@@ -1078,6 +1121,9 @@ def sm64_anim_register():
     bpy.types.Scene.animGroupName = bpy.props.StringProperty(name="Group Name", default="group0")
     bpy.types.Scene.animWriteHeaders = bpy.props.BoolProperty(name="Write Headers For Actor", default=True)
     bpy.types.Scene.animCustomExport = bpy.props.BoolProperty(name="Custom Export Path")
+
+    #Coop 
+    bpy.types.Scene.smluaAnimation = bpy.props.BoolProperty(name="SMLua Animation")
     bpy.types.Scene.animExportHeaderType = bpy.props.EnumProperty(
         items=enumExportHeaderType, name="Header Export", default="Actor"
     )
@@ -1090,6 +1136,8 @@ def sm64_anim_unregister():
         unregister_class(cls)
 
     del bpy.types.Scene.animStartImport
+    #Coop
+    del bpy.types.Scene.smluaAnimation
     del bpy.types.Scene.animExportStart
     del bpy.types.Scene.animExportEnd
     del bpy.types.Scene.levelAnimImport

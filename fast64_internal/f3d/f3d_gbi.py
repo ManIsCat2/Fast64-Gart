@@ -355,6 +355,7 @@ class F3D:
             self.G_CULL_BOTH = 0x00003000  # To make code cleaner
         self.G_FOG = 0x00010000
         self.G_LIGHTING = 0x00020000
+        self.G_LIGHTING_ENGINE_EXT = 0x00004000
         self.G_TEXTURE_GEN = 0x00040000
         self.G_TEXTURE_GEN_LINEAR = 0x00080000
         self.G_LOD = 0x00100000  # NOT IMPLEMENTED
@@ -383,6 +384,7 @@ class F3D:
             "G_CULL_BOTH",
             "G_FOG",
             "G_LIGHTING",
+            "G_LIGHTING_ENGINE_EXT",
             "G_TEXTURE_GEN",
             "G_TEXTURE_GEN_LINEAR",
             "G_LOD",
@@ -404,6 +406,7 @@ class F3D:
 
         self.G_FOG_H = self.G_FOG / 0x10000
         self.G_LIGHTING_H = self.G_LIGHTING / 0x10000
+        self.G_LIGHTING_ENGINE_EXT_H = self.G_LIGHTING_ENGINE_EXT / 0x10000
         self.G_TEXTURE_GEN_H = self.G_TEXTURE_GEN / 0x10000
         self.G_TEXTURE_GEN_LINEAR_H = self.G_TEXTURE_GEN_LINEAR / 0x10000
         self.G_LOD_H = self.G_LOD / 0x10000  # NOT IMPLEMENTED
@@ -3181,6 +3184,9 @@ class Lights:
         self.startAddress = 0
         self.a = None
         self.l = []
+        self.coopplayerpartName = "None"
+        self.keepambientrecolor = False
+        self.keeplightcolor = False
 
     def set_addr(self, startAddress):
         startAddress = get64bitAlignedAddr(startAddress)
@@ -4071,6 +4077,28 @@ class SPLightColor(GbiMacro):
         return GFX_SIZE * 2
 
 
+SPCopyLightsPlayerPartALLConsts = {
+    0: "PANTS",
+    1: "SHIRT",
+    2: "GLOVES",
+    3: "SHOES",
+    4: "HAIR",
+    5: "SKIN",
+    6: "CAP",
+    7: "EMBLEM"
+}
+
+SPCopyLightEXTALLConts = {
+    0: 3,
+    1: 5,
+    2: 7,
+    3: 9,
+    4: 11,
+    5: 13,
+    6: 15,
+    7: 17
+}
+
 @dataclass(unsafe_hash=True)
 class SPSetLights(GbiMacro):
     lights: Lights
@@ -4108,11 +4136,31 @@ class SPSetLights(GbiMacro):
 
     def to_c(self, static=True):
         n = len(self.lights.l)
-        header = f"gsSPSetLights{n}(" if static else f"gSPSetLights{n}(glistp++, "
+        if self.lights.coopplayerpartName != "None" and not self.lights.keeplightcolor and not self.lights.keepambientrecolor:
+            header = f"gsSPCopyLightsPlayerPart(" if static else f"gSPSetLights{n}(glistp++, "
+        else:
+            header = f"gsSPSetLights{n}(" if static else f"gSPSetLights{n}(glistp++, "
         if not static and bpy.context.scene.gameEditorMode == "Homebrew":
             header += f"(*(Lights{n}*) segmented_to_virtual(&{self.lights.name}))"
         else:
-            header += self.lights.name
+            if self.lights.coopplayerpartName != "None" and not  self.lights.keepambientrecolor and not self.lights.keeplightcolor:
+                header += str(SPCopyLightsPlayerPartALLConsts[int(self.lights.coopplayerpartName)])
+            else:
+                header += self.lights.name
+
+        # Customs
+
+        # these ifs are switched for some reason: not = true, true = not
+
+        if self.lights.coopplayerpartName != "None" and not self.lights.keepambientrecolor and self.lights.keeplightcolor:
+            header = f"gsSPLight(&{self.lights.name}.l, 1),\n    gsSPLight(&{self.lights.name}.a, 2),\n    gsSPCopyLightEXT(1, {str(int(SPCopyLightEXTALLConts[int(self.lights.coopplayerpartName)]))}"
+        if not static and bpy.context.scene.gameEditorMode == "Homebrew":
+            header += f"(*(Lights{n}*) segmented_to_virtual(&{self.lights.name}))"
+        
+        if self.lights.coopplayerpartName != "None" and not self.lights.keeplightcolor and self.lights.keepambientrecolor:
+            header = f"gsSPLight(&{self.lights.name}.l, 1),\n    gsSPLight(&{self.lights.name}.a, 2),\n    gsSPCopyLightEXT(2, {str(int(SPCopyLightEXTALLConts[int(self.lights.coopplayerpartName)]))}"
+        if not static and bpy.context.scene.gameEditorMode == "Homebrew":
+            header += f"(*(Lights{n}*) segmented_to_virtual(&{self.lights.name}))"
         return header + ")"
 
     def size(self, f3d):

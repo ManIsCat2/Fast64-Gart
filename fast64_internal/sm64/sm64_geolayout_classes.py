@@ -535,6 +535,76 @@ class FunctionNode:
     def to_c(self):
         return "GEO_ASM(" + str(self.func_param) + ", " + convert_addr_to_func(self.geo_func) + "),"
 
+# Coop
+class CoopRecolorCommands:
+    def __init__(self, geo_func, func_param):
+        self.geo_func = geo_func
+        self.func_param = func_param
+        self.hasDL = False
+
+    def size(self):
+        return 8
+
+    def to_binary(self, segmentData):
+        command = bytearray([GEO_CALL_ASM, 0x00])
+        func_param = int(self.func_param)
+        command.extend(func_param.to_bytes(2, "big", signed=True))
+        addFuncAddress(command, self.geo_func)
+        return command
+
+    def to_c(self):
+        return ("GEO_ASM(" + "LAYER_OPAQUE + 3" + ", " + "geo_mario_set_player_colors" + "),\n" +
+        "GEO_ASM(" + "LAYER_ALPHA + 3" + ", " + "geo_mario_set_player_colors" + "),\n" +
+        "GEO_ASM(" + "LAYER_TRANSPARENT + 3" + ", " + "geo_mario_set_player_colors" + "),\n" + 
+        "GEO_ASM(" + "LAYER_TRANSPARENT_DECAL + 3" + ", " + "geo_mario_set_player_colors" + "),\n")
+    
+
+# copy paste lmfao
+class CoopMirrorCommands:
+    def __init__(self, geo_func, func_param):
+        self.geo_func = geo_func
+        self.func_param = func_param
+        self.hasDL = False
+
+    def size(self):
+        return 8
+
+    def to_binary(self, segmentData):
+        command = bytearray([GEO_CALL_ASM, 0x00])
+        func_param = int(self.func_param)
+        command.extend(func_param.to_bytes(2, "big", signed=True))
+        addFuncAddress(command, self.geo_func)
+        return command
+
+    def to_c(self):
+        return ("GEO_ASM(" + "LAYER_OPAQUE << 2" + ", " + "geo_mirror_mario_backface_culling" + "),\n" +
+        "GEO_ASM(" + "LAYER_ALPHA << 2" + ", " + "geo_mirror_mario_backface_culling" + "),\n" +
+        "GEO_ASM(" + "LAYER_TRANSPARENT << 2" + ", " + "geo_mirror_mario_backface_culling" + "),\n" +
+        "GEO_ASM(" + "LAYER_TRANSPARENT_DECAL << 2" + ", " + "geo_mirror_mario_backface_culling" + "),\n")
+    
+#2
+class CoopMirrorCommands2:
+    def __init__(self, geo_func, func_param):
+        self.geo_func = geo_func
+        self.func_param = func_param
+        self.hasDL = False
+
+    def size(self):
+        return 8
+
+    def to_binary(self, segmentData):
+        command = bytearray([GEO_CALL_ASM, 0x00])
+        func_param = int(self.func_param)
+        command.extend(func_param.to_bytes(2, "big", signed=True))
+        addFuncAddress(command, self.geo_func)
+        return command
+
+    def to_c(self):
+        return ("GEO_ASM(" + "(LAYER_OPAQUE << 2) | 1" + ", " + "geo_mirror_mario_backface_culling" + "),\n" +
+        "GEO_ASM(" + "(LAYER_ALPHA << 2) | 1" + ", " + "geo_mirror_mario_backface_culling" + "),\n" +
+        "GEO_ASM(" + "(LAYER_TRANSPARENT << 2) | 1" + ", " + "geo_mirror_mario_backface_culling" + "),\n" +
+        "GEO_ASM(" + "(LAYER_TRANSPARENT_DECAL << 2) | 1" + ", " + "geo_mirror_mario_backface_culling" + "),\n")
+
 
 class HeldObjectNode:
     def __init__(self, geo_func, translate):

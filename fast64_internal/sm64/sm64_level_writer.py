@@ -978,6 +978,9 @@ def exportLevelC(obj, transformMatrix, level_name, exportDir, savePNG, customExp
 
     fModel.freePalettes()
 
+    if bpy.context.scene.fast64.sm64.fix_coop_fog:
+        staticData.source =  staticData.source.replace("gsDPSetCombineLERP(TEXEL0, 0, SHADE, 0, 0, 0, 0, ENVIRONMENT, 0, 0, 0, COMBINED, 0, 0, 0, COMBINED)", "gsDPSetCombineMode(G_CC_MODULATEI, G_CC_PASS2)")
+
     level_data.script_data += include_proto("model.inc.c")
     level_data.header_data += staticData.header
 
@@ -1232,6 +1235,12 @@ class SM64_ExportLevel(ObjectDataExporter):
 
             applyRotation([obj], math.radians(-90), "X")
             self.cleanup_temp_object_data()
+
+            if props.non_decomp_level and props.delete_all_lvls:
+                    for filename in os.listdir(export_path):
+                        file_path = os.path.join(export_path, filename)
+                        if os.path.isfile(file_path) and filename == "level_"+level_name+"_entry.lvl":
+                            os.remove(file_path)
 
             self.report({"INFO"}, "Success!")
             self.show_warnings()

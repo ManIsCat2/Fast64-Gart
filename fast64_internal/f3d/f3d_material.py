@@ -103,6 +103,21 @@ sm64EnumDrawLayers = [
     ("7", "Transparent Intersecting (0x07)", "Transparent Intersecting"),
 ]
 
+# Coop Player Parts
+
+sm64EnumPlayerParts = [
+    ("None", "None", "None"),
+    ("0", "Pants (Overalls) (0x00)", "Overalls"),
+    ("1", "Shirt (0x01)", "Shirt"),
+    ("2", "Gloves (0x02)", "Gloves"),
+    ("3", "Shoes (0x03)", "Shoes"),
+    ("4", "Hair (0x04)", "Hair"),
+    ("5", "Skin (0x05)", "Skin"),
+    ("6", "Cap (0x06)", "Cap"),
+    ("7", "Emblem (0x07)", "Emblem"),
+]
+
+
 ootEnumDrawLayers = [
     ("Opaque", "Opaque", "Opaque"),
     ("Transparent", "Transparent", "Transparent"),
@@ -164,6 +179,7 @@ F3D_GEO_MODES = {
     "texGenLinear": "g_tex_gen_linear",
     "lod": "g_lod",
     "shadeSmooth": "g_shade_smooth",
+    "lightingEngine": "g_lighting_engine"
 }
 
 F3DLX_GEO_MODES = {
@@ -263,6 +279,11 @@ def get_world_layer_defaults(scene, game_mode: str, layer: str):
             False
         ), f"game_mode={game_mode} has no draw layer defaults, this function should not have been called at all with it"
 
+
+def update_coop_player_part(self, context):
+    with F3DMaterial_UpdateLock(get_material_from_context(context)) as material:
+        if not material:
+            return
 
 def rendermode_preset_to_advanced(material: bpy.types.Material):
     """
@@ -405,6 +426,15 @@ def update_blend_method(material: Material, context):
 
 class DrawLayerProperty(PropertyGroup):
     sm64: bpy.props.EnumProperty(items=sm64EnumDrawLayers, default="1", update=update_draw_layer)
+    oot: bpy.props.EnumProperty(items=ootEnumDrawLayers, default="Opaque", update=update_draw_layer)
+
+    def key(self):
+        return (self.sm64, self.oot)
+    
+#Coop
+
+class CoopPlayerPartProperty(PropertyGroup):
+    sm64: bpy.props.EnumProperty(items=sm64EnumPlayerParts, default="None", update=update_coop_player_part)
     oot: bpy.props.EnumProperty(items=ootEnumDrawLayers, default="Opaque", update=update_draw_layer)
 
     def key(self):
@@ -572,6 +602,7 @@ def ui_geo_mode(settings, dataHolder, layout, useDropdown):
         draw_mode(inputGroup, "g_shade_smooth")
 
         c = indentGroup(inputGroup, "g_lighting", False)
+        draw_mode(inputGroup, "g_lighting_engine")
         if ccWarnings and not shadeInCC and is_on("g_lighting") and not is_on("g_tex_gen"):
             multilineLabel(c, "Shade not used in CC, can disable\nlighting.", icon="INFO")
         draw_mode(c, "g_packed_normals", "g_lighting_specular", "g_ambocclusion", "g_fresnel_color")
@@ -586,7 +617,7 @@ def ui_geo_mode(settings, dataHolder, layout, useDropdown):
             shadeColorLabel = "Lighting * vertex color"
         if is_on("g_fresnel_color"):
             shadeColorLabel = "Fresnel"
-        elif not is_on("g_lighting") or is_on("g_lighttoalpha"):
+        elif not is_on("g_lighting") or is_on("g_lighttoalpha") or is_on("g_lighting_engine"):
             shadeColorLabel = "Vertex color"
         elif is_on("g_lighting") and is_on("g_packed_normals") and not is_on("g_lighttoalpha"):
             shadeColorLabel = "Lighting * vertex color"
@@ -882,6 +913,13 @@ class F3DPanel(Panel):
 
             if f3d_mat.use_default_lighting:
                 lightSettings.prop(f3d_mat, "default_light_color", text="Light Color")
+      
+                # Player part for coop
+                prop_split(layout, f3d_mat.coopplayerpart, "sm64", "Coop Player Part")
+                if f3d_mat.coopplayerpart.sm64 != "None":
+                    light_controls.prop(f3d_mat, "coopkeepambient", text="Use Light for Recolorability", invert_checkbox=True)
+                    light_controls.prop(f3d_mat, "coopkeeplight", text="Use Ambient for Recolorability", invert_checkbox=True)
+
                 light_controls.prop(f3d_mat, "set_ambient_from_light", text="Automatic Ambient Color")
                 ambCol = lightSettings.column()
                 ambCol.enabled = not f3d_mat.set_ambient_from_light
@@ -3424,6 +3462,12 @@ class RDPSettings(PropertyGroup):
         update=update_node_values_with_preset,
         description="Enables calculating shade color using lights. Turn off for vertex colors as shade color",
     )
+    g_lighting_engine: bpy.props.BoolProperty(
+        name="Lighting Engine",
+        default=False,
+        update=update_node_values_with_preset,
+        description="Uses vertex colors for lighting (incompatible with lightmaps)"
+    )
     g_tex_gen: bpy.props.BoolProperty(
         name="Texture UV Generate",
         default=False,
@@ -4673,6 +4717,11 @@ class F3DMaterialProperty(PropertyGroup):
     use_cel_shading: bpy.props.BoolProperty(name="Use Cel Shading", update=update_cel_cutout_source)
     cel_shading: bpy.props.PointerProperty(type=CelShadingProperty)
 
+    #Coop
+    coopplayerpart: bpy.props.PointerProperty(type=CoopPlayerPartProperty)
+    coopkeepambient: bpy.props.BoolProperty()
+    coopkeeplight: bpy.props.BoolProperty()
+
     def key(self) -> F3DMaterialHash:
         useDefaultLighting = self.set_lights and self.use_default_lighting
         return (
@@ -4685,6 +4734,7 @@ class F3DMaterialProperty(PropertyGroup):
             self.tex1.key(),
             self.rdp_settings.key(),
             self.draw_layer.key(),
+            self.coopplayerpart.key(),
             self.use_large_textures,
             self.use_cel_shading,
             self.cel_shading.tintPipeline if self.use_cel_shading else None,
@@ -4920,6 +4970,7 @@ mat_classes = (
     UnlinkF3DImage0,
     UnlinkF3DImage1,
     DrawLayerProperty,
+    CoopPlayerPartProperty,
     ApplyMaterialPresetOperator,
     MATERIAL_MT_f3d_presets,
     AddPresetF3D,
@@ -4985,7 +5036,7 @@ def mat_register():
     savePresets()
 
     Scene.f3d_type = bpy.props.EnumProperty(
-        name="Microcode", items=enumF3D, default="F3D", update=update_all_material_nodes
+        name="Microcode", items=enumF3D, default="F3DEX2/LX2", update=update_all_material_nodes
     )
 
     # RDP Defaults

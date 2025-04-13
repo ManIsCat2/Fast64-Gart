@@ -1338,6 +1338,10 @@ def saveOrGetF3DMaterial(material, fModel, obj, drawLayer, convertTextureData):
                 fMaterial.mat_only_DL.commands.extend([SPLightColor(f"LIGHT_{i + 1}", light.color)])
         else:
             fLights = saveLightsDefinition(fModel, fMaterial, f3dMat, materialName + "_lights")
+            if f3dMat.coopplayerpart.sm64 != "None":
+                fLights.coopplayerpartName = f3dMat.coopplayerpart.sm64
+                fLights.keepambientrecolor = f3dMat.coopkeepambient
+                fLights.keeplightcolor = f3dMat.coopkeeplight
             fMaterial.mat_only_DL.commands.extend([SPSetLights(fLights)])
 
     fMaterial.mat_only_DL.commands.append(DPPipeSync())
@@ -1547,7 +1551,7 @@ def getLightDefinitions(fModel, material, lightsName=""):
 
     if material.use_default_lighting:
         lights.a = Ambient(exportColor(material.ambient_light_color))
-        lights.l.append(Light(exportColor(material.default_light_color), [0x49, 0x49, 0x49]))
+        lights.l.append(Light(exportColor(material.default_light_color), [0x28, 0x28, 0x28]))
     else:
         lights.a = Ambient(exportColor(material.ambient_light_color))
 
@@ -1617,6 +1621,7 @@ def saveGeoModeCommon(saveFunc: Callable, settings: RDPSettings, defaults: RDPSe
         saveFunc(settings.g_fresnel_alpha, defaults.g_fresnel_alpha, "G_FRESNEL_ALPHA", *args)
     saveFunc(settings.g_fog, defaults.g_fog, "G_FOG", *args)
     saveFunc(settings.g_lighting, defaults.g_lighting, "G_LIGHTING", *args)
+    saveFunc(settings.g_lighting_engine, defaults.g_lighting_engine, "G_LIGHTING_ENGINE_EXT", *args)
     saveFunc(settings.g_tex_gen, defaults.g_tex_gen, "G_TEXTURE_GEN", *args)
     saveFunc(settings.g_tex_gen_linear, defaults.g_tex_gen_linear, "G_TEXTURE_GEN_LINEAR", *args)
     saveFunc(settings.g_lod, defaults.g_lod, "G_LOD", *args)

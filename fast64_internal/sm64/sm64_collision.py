@@ -519,6 +519,11 @@ class SM64_ExportCollision(bpy.types.Operator):
                     props.actor_group_name,
                     level_name,
                 )
+                if props.is_actor_custom_export and props.delete_all_cols:
+                    for filename in os.listdir(export_path):
+                        file_path = os.path.join(export_path, filename)
+                        if os.path.isfile(file_path) and filename.endswith('.col'):
+                            os.remove(file_path)
                 self.report({"INFO"}, "Success!")
             elif context.scene.fast64.sm64.export_type == "Insertable Binary":
                 exportCollisionInsertableBinary(
