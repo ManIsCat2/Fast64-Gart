@@ -390,6 +390,7 @@ enumF3D = [
         "Variant of F3DEX2 family using vertex rejection instead of clipping",
         5,
     ),
+    ("F3DEX2E", "F3DEX2E", "Microcode used in the SM64 PC Port", 6),
     ("F3DEX3", "F3DEX3", "Custom microcode by Sauraen", 6),
     ("", "Homebrew", "", 8),
     ("RDPQ", "RDPQ", "Base libdragon microcode", 9),

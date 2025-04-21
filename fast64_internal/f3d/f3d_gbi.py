@@ -69,6 +69,7 @@ vertexBufferSize = {
     "F3DLP.Rej": (80, 32),
     "F3DEX2/LX2": (32, 32),
     "F3DEX2.Rej/LX2.Rej": (64, 64),
+    "F3DEX2E": (64, 64),
     "F3DEX3": (56, 56),
     "T3D": (70, 70),
 }
@@ -138,7 +139,7 @@ def isUcodeF3DEX1(F3D_VER: str) -> bool:
 
 
 def isUcodeF3DEX2(F3D_VER: str) -> bool:
-    return F3D_VER in {"F3DEX2.Rej/LX2.Rej", "F3DEX2/LX2"}
+    return F3D_VER in {"F3DEX2.Rej/LX2.Rej", "F3DEX2/LX2", "F3DEX2E"}
 
 
 def isUcodeF3DEX3(F3D_VER: str) -> bool:
