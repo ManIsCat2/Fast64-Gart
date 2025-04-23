@@ -36,6 +36,7 @@ from .f3d_gbi import (
     enumTexScroll,
     isUcodeF3DEX1,
     isUcodeF3DEX3,
+    isUcodeF3DEX2E,
     is_ucode_f3d,
     is_ucode_t3d,
     default_draw_layers,
@@ -179,7 +180,6 @@ F3D_GEO_MODES = {
     "texGenLinear": "g_tex_gen_linear",
     "lod": "g_lod",
     "shadeSmooth": "g_shade_smooth",
-    "lightingEngine": "g_lighting_engine"
 }
 
 F3DLX_GEO_MODES = {
@@ -197,6 +197,10 @@ F3DEX3_GEO_MODES = {
     "fresnelToAlpha": "g_fresnel_alpha",
 }
 
+F3DEX2E_GEO_MODES = {
+    #"packedNormals": "g_packed_normals",
+    "lightingEngine": "g_lighting_engine",
+}
 
 T3D_GEO_MODES = {
     "cullFront": "g_cull_front",
@@ -214,6 +218,8 @@ def geo_modes_in_ucode(UCODE_VER: str):
             geo_modes.update(F3DLX_GEO_MODES)
         if isUcodeF3DEX3(UCODE_VER):
             geo_modes.update(F3DEX3_GEO_MODES)
+        if isUcodeF3DEX2E(UCODE_VER):
+            geo_modes.update(F3DEX2E_GEO_MODES)
     if is_ucode_t3d(UCODE_VER):
         geo_modes.update(T3D_GEO_MODES)
     return geo_modes
@@ -602,7 +608,8 @@ def ui_geo_mode(settings, dataHolder, layout, useDropdown):
         draw_mode(inputGroup, "g_shade_smooth")
 
         c = indentGroup(inputGroup, "g_lighting", False)
-        draw_mode(inputGroup, "g_lighting_engine")
+        if isUcodeF3DEX2E(f3d.F3D_VER):
+            draw_mode(inputGroup, "g_lighting_engine")
         if ccWarnings and not shadeInCC and is_on("g_lighting") and not is_on("g_tex_gen"):
             multilineLabel(c, "Shade not used in CC, can disable\nlighting.", icon="INFO")
         draw_mode(c, "g_packed_normals", "g_lighting_specular", "g_ambocclusion", "g_fresnel_color")

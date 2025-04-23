@@ -139,7 +139,10 @@ def isUcodeF3DEX1(F3D_VER: str) -> bool:
 
 
 def isUcodeF3DEX2(F3D_VER: str) -> bool:
-    return F3D_VER in {"F3DEX2.Rej/LX2.Rej", "F3DEX2/LX2", "F3DEX2E"}
+    return F3D_VER in {"F3DEX2.Rej/LX2.Rej", "F3DEX2/LX2"}
+
+def isUcodeF3DEX2E(F3D_VER: str) -> bool:
+    return F3D_VER == "F3DEX2E"
 
 
 def isUcodeF3DEX3(F3D_VER: str) -> bool:
@@ -161,15 +164,16 @@ class F3D:
         self.F3D_VER = F3D_VER
         F3DEX_GBI = self.F3DEX_GBI = isUcodeF3DEX1(F3D_VER)
         F3DEX_GBI_2 = self.F3DEX_GBI_2 = isUcodeF3DEX2(F3D_VER)
+        F3DEX_GBI_2E = self.F3DEX_GBI_2E = isUcodeF3DEX2E(F3D_VER)
         F3DEX_GBI_3 = self.F3DEX_GBI_3 = isUcodeF3DEX3(F3D_VER)
         F3DLP_GBI = self.F3DLP_GBI = self.F3DEX_GBI
-        self.F3D_OLD_GBI = not (F3DEX_GBI or F3DEX_GBI_2 or F3DEX_GBI_3)
+        self.F3D_OLD_GBI = not (F3DEX_GBI or F3DEX_GBI_2 or F3DEX_GBI_3 or F3DEX_GBI_2E)
         self.F3D_GBI = is_ucode_f3d(F3D_VER)
 
         # F3DEX2 is F3DEX1 and F3DEX3 is F3DEX2, but F3DEX3 is not F3DEX1
         if F3DEX_GBI_2:
             F3DEX_GBI = self.F3DEX_GBI = True
-        elif F3DEX_GBI_3:
+        elif F3DEX_GBI_3 or F3DEX_GBI_2E:
             F3DEX_GBI_2 = self.F3DEX_GBI_2 = True
 
         if F3D_VER in vertexBufferSize:
@@ -356,7 +360,6 @@ class F3D:
             self.G_CULL_BOTH = 0x00003000  # To make code cleaner
         self.G_FOG = 0x00010000
         self.G_LIGHTING = 0x00020000
-        self.G_LIGHTING_ENGINE_EXT = 0x00004000
         self.G_TEXTURE_GEN = 0x00040000
         self.G_TEXTURE_GEN_LINEAR = 0x00080000
         self.G_LOD = 0x00100000  # NOT IMPLEMENTED
@@ -375,6 +378,10 @@ class F3D:
             self.G_FRESNEL_COLOR = 0x00004000
             self.G_FRESNEL_ALPHA = 0x00008000
             self.G_LIGHTING_POSITIONAL = 0x00400000  # Ignored, always on
+        
+        if F3DEX_GBI_2E:
+            self.G_LIGHTING_ENGINE_EXT = 0x00004000
+            self.G_PACKED_NORMALS_EXT = 0x00000800
 
         self.allGeomModeFlags = {
             "G_ZBUFFER",
@@ -385,7 +392,6 @@ class F3D:
             "G_CULL_BOTH",
             "G_FOG",
             "G_LIGHTING",
-            "G_LIGHTING_ENGINE_EXT",
             "G_TEXTURE_GEN",
             "G_TEXTURE_GEN_LINEAR",
             "G_LOD",
@@ -404,10 +410,17 @@ class F3D:
                 "G_FRESNEL_COLOR",
                 "G_FRESNEL_ALPHA",
             }
+        if F3DEX_GBI_2E:
+            self.allGeomModeFlags |= {
+                "G_LIGHTING_ENGINE_EXT",
+                "G_PACKED_NORMALS_EXT",
+            }
 
         self.G_FOG_H = self.G_FOG / 0x10000
         self.G_LIGHTING_H = self.G_LIGHTING / 0x10000
-        self.G_LIGHTING_ENGINE_EXT_H = self.G_LIGHTING_ENGINE_EXT / 0x10000
+        if F3DEX_GBI_2E:
+            self.G_LIGHTING_ENGINE_EXT_H = self.G_LIGHTING_ENGINE_EXT / 0x10000
+            self.G_PACKED_NORMALS_EXT_H = self.G_PACKED_NORMALS_EXT / 0x10000
         self.G_TEXTURE_GEN_H = self.G_TEXTURE_GEN / 0x10000
         self.G_TEXTURE_GEN_LINEAR_H = self.G_TEXTURE_GEN_LINEAR / 0x10000
         self.G_LOD_H = self.G_LOD / 0x10000  # NOT IMPLEMENTED

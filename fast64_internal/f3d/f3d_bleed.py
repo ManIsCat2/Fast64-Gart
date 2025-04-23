@@ -83,7 +83,9 @@ class BleedGraphics:
         place_in_flaglist(defaults.g_lighting, "G_LIGHTING", setGeo, clearGeo)
         place_in_flaglist(defaults.g_tex_gen, "G_TEXTURE_GEN", setGeo, clearGeo)
         place_in_flaglist(defaults.g_tex_gen_linear, "G_TEXTURE_GEN_LINEAR", setGeo, clearGeo)
-        place_in_flaglist(defaults.g_lighting_engine, "G_LIGHTING_ENGINE_EXT", setGeo, clearGeo)
+        if bpy.context.scene.f3d_type == "F3DEX_GBI_2E":
+            place_in_flaglist(defaults.g_lighting_engine, "G_LIGHTING_ENGINE_EXT", setGeo, clearGeo)
+            place_in_flaglist(defaults.g_packed_normals, "G_PACKED_NORMALS_EXT", setGeo, clearGeo)
         place_in_flaglist(defaults.g_shade_smooth, "G_SHADING_SMOOTH", setGeo, clearGeo)
         if bpy.context.scene.f3d_type == "F3DEX_GBI_2" or bpy.context.scene.f3d_type == "F3DEX_GBI":
             place_in_flaglist(defaults.g_clipping, "G_CLIPPING", setGeo, clearGeo)
