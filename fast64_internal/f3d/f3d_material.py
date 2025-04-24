@@ -198,7 +198,7 @@ F3DEX3_GEO_MODES = {
 }
 
 F3DEX2E_GEO_MODES = {
-    #"packedNormals": "g_packed_normals",
+    "packedNormals": "g_packed_normals",
     "lightingEngine": "g_lighting_engine",
 }
 
