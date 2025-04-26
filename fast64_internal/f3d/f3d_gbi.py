@@ -3329,9 +3329,12 @@ class FImage:
         code.header = f"extern u{str(bitsPerValue)} {self.name}[];\n"
 
         # This is to force 8 byte alignment
-        if bitsPerValue != 64:
-            code.source = f"Gfx {self.aligner_name}[] = {{gsSPEndDisplayList()}};\n"
-        code.source += f"u{str(bitsPerValue)} {self.name}[] = {{\n\t"
+        if get_F3D_GBI().F3DEX_GBI_2E:
+            code.source += f"Texture {self.name}[] = {{\n\t"
+        else:
+            if bitsPerValue != 64:
+                code.source = f"Gfx {self.aligner_name}[] = {{gsSPEndDisplayList()}};\n"
+            code.source += f"u{str(bitsPerValue)} {self.name}[] = {{\n\t"
         code.source += texData
         code.source += "\n};\n\n"
         return code
