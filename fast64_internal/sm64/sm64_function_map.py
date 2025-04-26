@@ -5144,8 +5144,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 4": {
         "80000300": "osTvType",
@@ -10291,8 +10292,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 5": {
         "80000300": "osTvType",
@@ -15443,8 +15445,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 6": {
         "80000000": "D_80000000",
@@ -20620,8 +20623,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 7": {
         "80000000": "D_80000000",
@@ -25797,8 +25801,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 8": {
         "80000000": "EXCEPTION_TLB_MISS",
@@ -30980,8 +30985,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 10": {
         "80000000": "EXCEPTION_TLB_MISS",
@@ -36164,8 +36170,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 11": {
         "80000000": "EXCEPTION_TLB_MISS",
@@ -41347,8 +41354,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 12": {
         "80000000": "EXCEPTION_TLB_MISS",
@@ -46530,8 +46538,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 13": {
         "80000000": "EXCEPTION_TLB_MISS",
@@ -51599,8 +51608,9 @@ func_map = {
         "007d1d80": "_behaviorSegmentRomEnd",
         "8016f000": "_goddardSegmentStart",
         "007cc6c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
     "Refresh 16": {
         "80000000": "EXCEPTION_TLB_MISS",
@@ -56829,7 +56839,8 @@ func_map = {
         "007cc6c0": "__romPos",
         "8016f000": "_goddardSegmentStart",
         "0021f4c0": "_goddardSegmentRomStart",
-        "14000000":  "bhvAmbientLight",
-        "14000001":  "bhvPointLight"
+        "14000000": "bhvAmbientLight",
+        "14000001": "bhvPointLight",
+        "14000002": "RM_Scroll_Texture"
     },
 }
