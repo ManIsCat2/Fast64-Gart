@@ -944,13 +944,17 @@ class F3DContext:
             rdp_settings.g_ambocclusion = False
             rdp_settings.g_attroffset_z_enable = False
             rdp_settings.g_attroffset_st_enable = False
-            rdp_settings.g_packed_normals = False
+            if self.f3d.F3DEX_GBI_2E:
+                rdp_settings.g_packed_normals = bitFlags & self.f3d.G_PACKED_NORMALS != 0
+            else:
+                rdp_settings.g_packed_normals = False
             rdp_settings.g_lighttoalpha = False
             rdp_settings.g_lighting_specular = False
             rdp_settings.g_fresnel_color = False
             rdp_settings.g_fresnel_alpha = False
         rdp_settings.g_fog = bitFlags & self.f3d.G_FOG != 0
         rdp_settings.g_lighting = bitFlags & self.f3d.G_LIGHTING != 0
+        rdp_settings.g_lighting_engine = bitFlags & self.f3d.G_LIGHTING_ENGINE_EXT != 0
         rdp_settings.g_tex_gen = bitFlags & self.f3d.G_TEXTURE_GEN != 0
         rdp_settings.g_tex_gen_linear = bitFlags & self.f3d.G_TEXTURE_GEN_LINEAR != 0
         rdp_settings.g_lod = bitFlags & self.f3d.G_LOD != 0

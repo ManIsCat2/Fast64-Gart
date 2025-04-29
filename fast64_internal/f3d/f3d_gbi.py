@@ -381,7 +381,7 @@ class F3D:
         
         if F3DEX_GBI_2E:
             self.G_LIGHTING_ENGINE_EXT = 0x00004000
-            self.G_PACKED_NORMALS_EXT = 0x00000800
+            self.G_PACKED_NORMALS_EXT = 0x00000080
 
         self.allGeomModeFlags = {
             "G_ZBUFFER",
@@ -420,7 +420,6 @@ class F3D:
         self.G_LIGHTING_H = self.G_LIGHTING / 0x10000
         if F3DEX_GBI_2E:
             self.G_LIGHTING_ENGINE_EXT_H = self.G_LIGHTING_ENGINE_EXT / 0x10000
-            self.G_PACKED_NORMALS_EXT_H = self.G_PACKED_NORMALS_EXT / 0x10000
         self.G_TEXTURE_GEN_H = self.G_TEXTURE_GEN / 0x10000
         self.G_TEXTURE_GEN_LINEAR_H = self.G_TEXTURE_GEN_LINEAR / 0x10000
         self.G_LOD_H = self.G_LOD / 0x10000  # NOT IMPLEMENTED
