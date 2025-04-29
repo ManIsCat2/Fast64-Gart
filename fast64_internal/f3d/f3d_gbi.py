@@ -2126,8 +2126,11 @@ class Vtx:
         def spc(x):
             return "{" + ", ".join([str(a) for a in x]) + "}"
 
+        def hex(x):
+            return "{" + ", ".join(["{:#04x}".format(a).upper().replace("X", "x") for a in x]) + "}"
+
         flag = "0" if self.packedNormal == 0 else f"{self.packedNormal:#06x}"
-        return "{{ " + ", ".join([spc(self.position), flag, spc(self.uv), spc(self.colorOrNormal)]) + " }}"
+        return "{{" + ", ".join([spc(self.position), flag, spc(self.uv), hex(self.colorOrNormal)]) + "}}"
 
 
 class VtxList:
@@ -3325,9 +3328,12 @@ class FImage:
         code.header = f"extern u{str(bitsPerValue)} {self.name}[];\n"
 
         # This is to force 8 byte alignment
-        if bitsPerValue != 64:
-            code.source = f"Gfx {self.aligner_name}[] = {{gsSPEndDisplayList()}};\n"
-        code.source += f"u{str(bitsPerValue)} {self.name}[] = {{\n\t"
+        if get_F3D_GBI().F3DEX_GBI_2E:
+            code.source += f"Texture {self.name}[] = {{\n\t"
+        else:
+            if bitsPerValue != 64:
+                code.source = f"Gfx {self.aligner_name}[] = {{gsSPEndDisplayList()}};\n"
+            code.source += f"u{str(bitsPerValue)} {self.name}[] = {{\n\t"
         code.source += texData
         code.source += "\n};\n\n"
         return code

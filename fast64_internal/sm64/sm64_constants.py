@@ -834,7 +834,8 @@ enumBehaviourPresets = [
     ("1300091c", "Yellow Coin", "Yellow Coin"),
     ("13004538", "Yoshi", "Yoshi"),
     ("14000000",  "LE Ambient Light", "LE Ambient Light"),
-    ("14000001",  "LE Point Light", "LE Point Light")
+    ("14000001",  "LE Point Light", "LE Point Light"),
+    ("14000002",  "Scrolling Texture Manager", "Scrolling Texture Manager")
 ]
 enumModelIDs = [
     ("Custom", "Custom", "Custom"),

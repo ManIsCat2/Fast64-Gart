@@ -19,7 +19,7 @@ from ..utility import (
     geoNodeRotateOrder,
 )
 from ..f3d.f3d_bleed import BleedGraphics
-from ..f3d.f3d_gbi import FModel
+from ..f3d.f3d_gbi import FModel, get_F3D_GBI
 
 from .sm64_geolayout_constants import (
     nodeGroupCmds,
@@ -174,7 +174,8 @@ class GeolayoutGraph:
     def to_c(self):
         data = CData()
         self.checkListSorted()
-        data.source = '#include "src/game/envfx_snow.h"\n\n'
+        if not get_F3D_GBI().F3DEX_GBI_2E:
+            data.source = '#include "src/game/envfx_snow.h"\n\n'
         for geolayout in self.sortedList:
             data.append(geolayout.to_c())
         return data

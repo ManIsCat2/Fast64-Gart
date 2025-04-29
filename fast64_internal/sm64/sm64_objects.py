@@ -189,6 +189,20 @@ backgroundSegments = {
 
 enumWaterBoxType = [("Water", "Water", "Water"), ("Toxic Haze", "Toxic Haze", "Toxic Haze")]
 
+enumScrollingBehavior = [
+    ("4", "UV X Scrolling", "UV X Scrolling"),
+    ("5", "UV Y Scrolling", "UV Y Scrolling"),
+    ("0", "X Scrolling", "X Scrolling"),
+    ("1", "Y Scrolling", "Y Scrolling"),
+    ("2", "Z Scrolling", "Z Scrolling")
+]
+
+enumScrollingType = [
+    ("0", "Normal", "Normal"),
+    ("1", "Sine", "Sine"),
+    ("2", "Jump", "Jump")
+]
+
 
 class InlineGeolayoutObjConfig:
     def __init__(
@@ -826,17 +840,30 @@ def process_sm64_objects(obj, area, rootMatrix, transformMatrix, specialsOnly):
                     if obj.sm64_behaviour_enum != "Custom"
                     else obj.sm64_obj_behaviour
                 )
-                area.objects.append(
-                    SM64_Object(
-                        modelID,
-                        translation,
-                        rotation,
-                        behaviour,
-                        obj.fast64.sm64.game_object.get_behavior_params(),
-                        get_act_string(obj),
-                        obj.name,
+                if obj.sm64_behaviour_enum == "14000002":
+                    area.objects.append(
+                        SM64_Object(
+                            modelID,
+                            mathutils.Vector((obj.fast64.sm64.game_object.scroll_speed, int(obj.fast64.sm64.game_object.scroll_behavior), obj.fast64.sm64.game_object.affected_vertices)),
+                            mathutils.Vector((0, int(obj.fast64.sm64.game_object.scroll_type), obj.fast64.sm64.game_object.cycle_length)),
+                            behaviour,
+                            obj.fast64.sm64.game_object.id,
+                            get_act_string(obj),
+                            obj.name
+                        )
                     )
-                )
+                else:
+                    area.objects.append(
+                        SM64_Object(
+                            modelID,
+                            translation,
+                            rotation,
+                            behaviour,
+                            obj.fast64.sm64.game_object.get_behavior_params(),
+                            get_act_string(obj),
+                            obj.name,
+                        )
+                    )
             elif obj.sm64_obj_type == "Macro":
                 macro = obj.sm64_macro_enum if obj.sm64_macro_enum != "Custom" else obj.sm64_obj_preset
                 area.macros.append(
@@ -1171,6 +1198,20 @@ class SM64ObjectPanel(bpy.types.Panel):
             box.prop(game_object, "bparams", text="")
             parent_box.separator()
 
+    def draw_scrolling_params(self, obj: bpy.types.Object, parent_box: bpy.types.UILayout):
+        game_object = obj.fast64.sm64.game_object  # .bparams
+        parent_box.separator()
+        box = parent_box.box()
+        box.label(text="Scrolling Parameters")
+
+        prop_split(box, obj, "sm64_scrolling_behavior_enum", "Scrolling Behavior")
+        prop_split(box, obj, "sm64_scrolling_type_enum", "Scrolling Type")
+        box.separator(factor=0.25)
+        box.prop(game_object, "id", text="ID")
+        box.prop(game_object, "scroll_speed", text="Scroll Speed")
+        box.prop(game_object, "affected_vertices", text="Affected Vertices")
+        box.prop(game_object, "cycle_length", text="Cycle Length (Sine Speed)")
+
     def draw(self, context):
         prop_split(self.layout, context.scene, "gameEditorMode", "Game")
         box = self.layout.box().column()
@@ -1193,7 +1234,10 @@ class SM64ObjectPanel(bpy.types.Panel):
             behaviourLabel = box.box()
             behaviourLabel.label(text="Behaviours defined in include/behaviour_data.h.")
             behaviourLabel.label(text="Actual contents in data/behaviour_data.c.")
-            self.draw_behavior_params(obj, box)
+            if obj.sm64_behaviour_enum == "14000002":
+                self.draw_scrolling_params(obj, box)
+            else:
+                self.draw_behavior_params(obj, box)
             self.draw_acts(obj, box)
 
         elif obj.sm64_obj_type == "Macro":
@@ -2748,6 +2792,13 @@ class SM64_GameObjectProperties(bpy.types.PropertyGroup):
     bparam3: bpy.props.StringProperty(name="Behavior Param 3", description="Third Behavior Param", default="")
     bparam4: bpy.props.StringProperty(name="Behavior Param 4", description="Fourth Behavior Param", default="")
 
+    id: bpy.props.IntProperty(name="ID")
+    scroll_speed: bpy.props.IntProperty(name="Scroll Speed")
+    scroll_behavior: bpy.props.EnumProperty(name="Scroll Behavior", items=enumScrollingBehavior, default="4")
+    affected_vertices: bpy.props.IntProperty(name="Affected Vertices")
+    scroll_type: bpy.props.EnumProperty(name="Scroll Type", items=enumScrollingType, default="0")
+    cycle_length: bpy.props.IntProperty(name="Cycle Length (Sine Speed)")
+
     @staticmethod
     def upgrade_object(obj):
         game_object: SM64_GameObjectProperties = obj.fast64.sm64.game_object
@@ -2920,6 +2971,10 @@ def sm64_obj_register():
 
     bpy.types.Object.sm64_behaviour_enum = bpy.props.EnumProperty(name="Behaviour", items=enumBehaviourPresets)
 
+    bpy.types.Object.sm64_scrolling_behavior_enum = bpy.props.EnumProperty(name="Scrolling Behavior", items=enumScrollingBehavior)
+
+    bpy.types.Object.sm64_scrolling_type_enum = bpy.props.EnumProperty(name="Scrolling Type", items=enumScrollingType)
+
     # bpy.types.Object.sm64_model = bpy.props.StringProperty(
     # 	name = 'Model Name')
     # bpy.types.Object.sm64_macro = bpy.props.StringProperty(
@@ -3080,6 +3135,8 @@ def sm64_obj_unregister():
     del bpy.types.Object.sm64_macro_enum
     del bpy.types.Object.sm64_special_enum
     del bpy.types.Object.sm64_behaviour_enum
+    del bpy.types.Object.sm64_scrolling_behavior_enum
+    del bpy.types.Object.sm64_scrolling_type_enum
 
     # del bpy.types.Object.sm64_model
     # del bpy.types.Object.sm64_macro
