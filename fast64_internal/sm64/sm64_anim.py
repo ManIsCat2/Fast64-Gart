@@ -231,7 +231,6 @@ def exportAnimationC(armatureObj, loopAnim, dirPath, dirName, groupName, customE
         if not os.path.exists(geoDirPath):
             os.mkdir(geoDirPath)
 
-    if not bpy.context.scene.smluaAnimation:
         animDirPath = os.path.join(geoDirPath, "anims")
         if not os.path.exists(animDirPath):
             os.mkdir(animDirPath)
@@ -241,32 +240,17 @@ def exportAnimationC(armatureObj, loopAnim, dirPath, dirName, groupName, customE
     if bpy.context.scene.smluaAnimation:
         animFileName = dirName + ".lua"
         animPath = os.path.join(dirPath, animFileName)
+        data = sm64_anim
+        outFile = open(animPath, "w", newline="\n")
+        beforeIndiciandValue = str(data.header.repetitions) +  ", " + str(data.header.marioYOffset) + ", " "0" +  ", " + str(int(round(data.header.frameInterval[0]))) +  ", " + str(int(round(data.header.frameInterval[1] - 1))) +  ", "
+        outFile.write((f"smlua_anim_util_register_animation('{dirName}'" + ", ") + beforeIndiciandValue + "{" +  data.values.to_c().replace(");", "").replace("smlua_anim_util_register_animation(" + data.name + "_values,", "") + "}," + "{" + data.indices.to_c().replace(data.name + "_indices", "").replace("smlua_anim_util_register_animation", "").replace("(,", "").replace(");", "") + "}" + ");")
     else:
         animFileName = "anim_" + toAlnum(animName) + ".inc.c"
         animPath = os.path.join(animDirPath, animFileName)
-
-    if bpy.context.scene.smluaAnimation:
-        data = sm64_anim#.to_c()
-        outFile = open(animPath, "w", newline="\n")
-            #+ " = {\n"
-            #+ "\t"
-            #+ str(self.repetitions)
-            #+ ",\n"
-           # + "\t"
-           # + str(self.marioYOffset)
-           # + ",\n"
-           # + "\t0,\n"
-           # + "\t"
-           # + str(int(round(self.frameInterval[0])))
-          #  + ",\n"
-           # + "\t"
-           # + str(int(round(self.frameInterval[1] - 1)))
-        beforeIndiciandValue = str(data.header.repetitions) +  ", " + str(data.header.marioYOffset) + ", " "0" +  ", " + str(int(round(data.header.frameInterval[0]))) +  ", " + str(int(round(data.header.frameInterval[1] - 1))) +  ", "
-        outFile.write((f"smlua_anim_util_register_animation('{dirName}'" + ",") + beforeIndiciandValue + "{" +  data.values.to_c().replace(");", "").replace("smlua_anim_util_register_animation(" + data.name + "_values,", "") + "}," + "{" + data.indices.to_c().replace(data.name + "_indices", "").replace("smlua_anim_util_register_animation", "").replace("(,", "").replace(");", "") + "}" + ");")
-    else:
         data = sm64_anim.to_c()
         outFile = open(animPath, "w", newline="\n")
         outFile.write(data.source)
+
     outFile.close()
 
     if not bpy.context.scene.smluaAnimation:
