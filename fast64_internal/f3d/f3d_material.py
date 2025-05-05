@@ -923,10 +923,11 @@ class F3DPanel(Panel):
                 lightSettings.prop(f3d_mat, "default_light_color", text="Light Color")
       
                 # Player part for coop
-                prop_split(layout, f3d_mat.coopplayerpart, "sm64", "Coop Player Part")
-                if f3d_mat.coopplayerpart.sm64 != "None":
-                    light_controls.prop(f3d_mat, "coopkeepambient", text="Use Light for Recolorability", invert_checkbox=True)
-                    light_controls.prop(f3d_mat, "coopkeeplight", text="Use Ambient for Recolorability", invert_checkbox=True)
+                if get_F3D_GBI().F3DEX_GBI_2E:
+                    prop_split(layout, f3d_mat.coopplayerpart, "sm64", "Coop Player Part")
+                    if f3d_mat.coopplayerpart.sm64 != "None":
+                        light_controls.prop(f3d_mat, "coopkeepambient", text="Use Light for Recolorability", invert_checkbox=True)
+                        light_controls.prop(f3d_mat, "coopkeeplight", text="Use Ambient for Recolorability", invert_checkbox=True)
 
                 light_controls.prop(f3d_mat, "set_ambient_from_light", text="Automatic Ambient Color")
                 ambCol = lightSettings.column()

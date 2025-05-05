@@ -4155,28 +4155,41 @@ class SPSetLights(GbiMacro):
 
     def to_c(self, static=True):
         n = len(self.lights.l)
-        if self.lights.coopplayerpartName != "None" and not self.lights.keeplightcolor and not self.lights.keepambientrecolor:
-            header = f"gsSPCopyLightsPlayerPart(" if static else f"gSPSetLights{n}(glistp++, "
+
+        p_part_notnone = self.lights.coopplayerpartName != "None"
+        f3dex2e_gbi = get_F3D_GBI().F3DEX_GBI_2E
+
+        use_copy_lights = (
+            p_part_notnone
+            and not self.lights.keeplightcolor
+            and not self.lights.keepambientrecolor
+            and f3dex2e_gbi
+        )
+
+        if use_copy_lights:
+            header = "gsSPCopyLightsPlayerPart(" if static else f"gSPSetLights{n}(glistp++, "
         else:
             header = f"gsSPSetLights{n}(" if static else f"gSPSetLights{n}(glistp++, "
         if not static and bpy.context.scene.gameEditorMode == "Homebrew":
             header += f"(*(Lights{n}*) segmented_to_virtual(&{self.lights.name}))"
         else:
-            if self.lights.coopplayerpartName != "None" and not  self.lights.keepambientrecolor and not self.lights.keeplightcolor:
-                header += str(SPCopyLightsPlayerPartALLConsts[int(self.lights.coopplayerpartName)])
+            if use_copy_lights:
+                part_index = int(self.lights.coopplayerpartName)
+                header += str(SPCopyLightsPlayerPartALLConsts[part_index])
             else:
                 header += self.lights.name
 
-        # Customs
+        # these ifs are switched: not = true, true = not
 
-        # these ifs are switched for some reason: not = true, true = not
+        keepambient = self.lights.keepambientrecolor
+        keeplight = self.lights.keeplightcolor
 
-        if self.lights.coopplayerpartName != "None" and not self.lights.keepambientrecolor and self.lights.keeplightcolor:
+        if p_part_notnone and not keepambient and keeplight and f3dex2e_gbi:
             header = f"gsSPLight(&{self.lights.name}.l, 1),\n    gsSPLight(&{self.lights.name}.a, 2),\n    gsSPCopyLightEXT(1, {str(int(SPCopyLightEXTALLConts[int(self.lights.coopplayerpartName)]))}"
         if not static and bpy.context.scene.gameEditorMode == "Homebrew":
             header += f"(*(Lights{n}*) segmented_to_virtual(&{self.lights.name}))"
         
-        if self.lights.coopplayerpartName != "None" and not self.lights.keeplightcolor and self.lights.keepambientrecolor:
+        if p_part_notnone and not keeplight and keepambient and f3dex2e_gbi:
             header = f"gsSPLight(&{self.lights.name}.l, 1),\n    gsSPLight(&{self.lights.name}.a, 2),\n    gsSPCopyLightEXT(2, {str(int(SPCopyLightEXTALLConts[int(self.lights.coopplayerpartName)]))}"
         if not static and bpy.context.scene.gameEditorMode == "Homebrew":
             header += f"(*(Lights{n}*) segmented_to_virtual(&{self.lights.name}))"
