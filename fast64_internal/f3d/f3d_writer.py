@@ -272,6 +272,24 @@ def fixLargeUVs(obj):
             newUV = (uv_data[loopIndex].uv[0] + uvOffset[0], uv_data[loopIndex].uv[1] + uvOffset[1])
             uv_data[loopIndex].uv = newUV
 
+    f3dex2e_gbi = get_F3D_GBI().F3DEX_GBI_2E
+
+    for i in range(2):
+        if not f3dex2e_gbi:
+            # Move any UVs close to or straddling edge
+            minDiff = (-cellSize[i] + 2) - minUV[i]
+            if minDiff > 0:
+                applyOffset(minUV, maxUV, uvOffset, ceil(minDiff / UVinterval[i]) * UVinterval[i], i)
+
+            maxDiff = maxUV[i] - (cellSize[i] - 1)
+            if maxDiff > 0:
+                applyOffset(minUV, maxUV, uvOffset, -ceil(maxDiff / UVinterval[i]) * UVinterval[i], i)
+
+def applyOffset(minUV, maxUV, uvOffset, offset, i):
+    minUV[i] += offset
+    maxUV[i] += offset
+    uvOffset[i] += offset
+
 
 def findUVBounds(polygon, uv_data):
     minUV = [None, None]
