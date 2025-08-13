@@ -97,7 +97,7 @@ class SM64_ShortArray:
 
         wrapCounter = 0
         for short in self.shortData:
-            data += "0x" + format(short, "04X") + ", "
+            data += str(short) + ", "
             wrapCounter += 1
             if wrapCounter > 8:
                 data += "\n\t"
@@ -242,6 +242,7 @@ def exportAnimationC(armatureObj, loopAnim, dirPath, dirName, groupName, customE
         animPath = os.path.join(dirPath, animFileName)
         data = sm64_anim
         outFile = open(animPath, "w", newline="\n")
+        if bpy.context.scene.perBoneTrans: data.header.repetitions |= (1 << 8)
         beforeIndiciandValue = str(data.header.repetitions) +  ", " + str(data.header.marioYOffset) + ", " "0" +  ", " + str(int(round(data.header.frameInterval[0]))) +  ", " + str(int(round(data.header.frameInterval[1] - 1))) +  ", "
         outFile.write((f"smlua_anim_util_register_animation('{dirName}'" + ", ") + beforeIndiciandValue + "{" +  data.values.to_c().replace(");", "").replace("smlua_anim_util_register_animation(" + data.name + "_values,", "") + "}," + "{" + data.indices.to_c().replace(data.name + "_indices", "").replace("smlua_anim_util_register_animation", "").replace("(,", "").replace(");", "") + "}" + ");")
     else:
@@ -381,56 +382,69 @@ def exportAnimationCommon(armatureObj, loopAnim, name):
     sm64_anim = SM64_Animation(toAlnum(name + "_" + anim.name))
 
     nodeCount = len(armatureObj.data.bones)
-
     frame_start, frame_last = getFrameInterval(anim)
 
-    translationData, armatureFrameData = convertAnimationData(
-        anim,
-        armatureObj,
-        frame_start=frame_start,
-        frame_count=(frame_last - frame_start + 1),
-    )
+    if bpy.context.scene.perBoneTrans:
+        boneFrameData = convertAnimationData(
+            anim,
+            armatureObj,
+            frame_start=frame_start,
+            frame_count=(frame_last - frame_start + 1),
+        )
+    else:
+        translationData, armatureFrameData = convertAnimationData(
+            anim,
+            armatureObj,
+            frame_start=frame_start,
+            frame_count=(frame_last - frame_start + 1),
+        )
 
     repetitions = 0 if loopAnim else 1
-    marioYOffset = 0x00  # ??? Seems to be this value for most animations
-
+    marioYOffset = 0x00
     transformValuesOffset = 0
     headerSize = 0x1A
-    transformIndicesStart = headerSize  # 0x18 if including animSize?
-
-    # all node rotations + root translation
-    # *3 for each property (xyz) and *4 for entry size
-    # each keyframe stored as 2 bytes
-    # transformValuesStart = transformIndicesStart + (nodeCount + 1) * 3 * 4
+    transformIndicesStart = headerSize
     transformValuesStart = transformIndicesStart
 
-    for translationFrameProperty in translationData:
-        frameCount = len(translationFrameProperty.frames)
-        sm64_anim.indices.shortData.append(frameCount)
-        sm64_anim.indices.shortData.append(transformValuesOffset)
-        if (transformValuesOffset) > 2**16 - 1:
-            raise PluginError("Animation is too large.")
-        transformValuesOffset += frameCount
-        transformValuesStart += 4
-        for value in translationFrameProperty.frames:
-            sm64_anim.values.shortData.append(
-                int.from_bytes(value.to_bytes(2, "big", signed=True), byteorder="big", signed=False)
-            )
-
-    for boneFrameData in armatureFrameData:
-        for boneFrameDataProperty in boneFrameData:
-            frameCount = len(boneFrameDataProperty.frames)
+    if bpy.context.scene.perBoneTrans:
+        for boneFrames in boneFrameData:
+            for frameProperty in boneFrames:
+                frameCount = len(frameProperty.frames)
+                sm64_anim.indices.shortData.append(frameCount)
+                sm64_anim.indices.shortData.append(transformValuesOffset)
+                if transformValuesOffset > 2**16 - 1:
+                    raise PluginError("Animation is too large.")
+                transformValuesOffset += frameCount
+                transformValuesStart += 4
+                for value in frameProperty.frames:
+                    sm64_anim.values.shortData.append(value)
+    else:
+        for translationFrameProperty in translationData:
+            frameCount = len(translationFrameProperty.frames)
             sm64_anim.indices.shortData.append(frameCount)
             sm64_anim.indices.shortData.append(transformValuesOffset)
-            if (transformValuesOffset) > 2**16 - 1:
+            if transformValuesOffset > 2**16 - 1:
                 raise PluginError("Animation is too large.")
             transformValuesOffset += frameCount
             transformValuesStart += 4
-            for value in boneFrameDataProperty.frames:
-                sm64_anim.values.shortData.append(value)
+            for value in translationFrameProperty.frames:
+                sm64_anim.values.shortData.append(
+                    int.from_bytes(value.to_bytes(2, "big", signed=True), byteorder="big", signed=False)
+                )
+
+        for boneFrameData in armatureFrameData:
+            for boneFrameDataProperty in boneFrameData:
+                frameCount = len(boneFrameDataProperty.frames)
+                sm64_anim.indices.shortData.append(frameCount)
+                sm64_anim.indices.shortData.append(transformValuesOffset)
+                if transformValuesOffset > 2**16 - 1:
+                    raise PluginError("Animation is too large.")
+                transformValuesOffset += frameCount
+                transformValuesStart += 4
+                for value in boneFrameDataProperty.frames:
+                    sm64_anim.values.shortData.append(value)
 
     animSize = headerSize + len(sm64_anim.indices.shortData) * 2 + len(sm64_anim.values.shortData) * 2
-
     sm64_anim.header = SM64_AnimationHeader(
         sm64_anim.name,
         repetitions,
@@ -441,69 +455,108 @@ def exportAnimationCommon(armatureObj, loopAnim, name):
         transformIndicesStart,
         animSize,
     )
-
     return sm64_anim
 
 
 def convertAnimationData(anim, armatureObj, *, frame_start, frame_count):
     bonesToProcess = findStartBones(armatureObj)
-    currentBone = armatureObj.data.bones[bonesToProcess[0]]
     animBones = []
 
-    # Get animation bones in order
-    while len(bonesToProcess) > 0:
-        boneName = bonesToProcess[0]
-        currentBone = armatureObj.data.bones[boneName]
-        currentPoseBone = armatureObj.pose.bones[boneName]
-        bonesToProcess = bonesToProcess[1:]
-
-        # Only handle 0x13 bones for animation
-        if currentBone.geo_cmd in animatableBoneTypes:
+    # Collect all animatable bones
+    while bonesToProcess:
+        boneName = bonesToProcess.pop(0)
+        bone = armatureObj.data.bones[boneName]
+        if bone.geo_cmd in animatableBoneTypes:
             animBones.append(boneName)
-
-        # Traverse children in alphabetical order.
-        childrenNames = sorted([bone.name for bone in currentBone.children])
+        childrenNames = sorted(child.name for child in bone.children)
         bonesToProcess = childrenNames + bonesToProcess
 
-    # list of boneFrameData, which is [[x frames], [y frames], [z frames]]
-    translationData = [ValueFrameData(0, i, []) for i in range(3)]
-    armatureFrameData = [
-        [ValueFrameData(i, 0, []), ValueFrameData(i, 1, []), ValueFrameData(i, 2, [])] for i in range(len(animBones))
-    ]
+    if bpy.context.scene.perBoneTrans:
+        # Per-bone translation + rotation
+        boneFrameData = [
+            [ValueFrameData(i, j, []) for j in range(6)]  # 0-2: trans, 3-5: rot
+            for i in range(len(animBones))
+        ]
 
-    currentFrame = bpy.context.scene.frame_current
-    for frame in range(frame_start, frame_start + frame_count):
-        bpy.context.scene.frame_set(frame)
-        rootPoseBone = armatureObj.pose.bones[animBones[0]]
+        currentFrame = bpy.context.scene.frame_current
+        for frame in range(frame_start, frame_start + frame_count):
+            bpy.context.scene.frame_set(frame)
+            for boneIndex, boneName in enumerate(animBones):
+                bone = armatureObj.data.bones[boneName]
+                poseBone = armatureObj.pose.bones[boneName]
 
-        translation = (
-            mathutils.Matrix.Scale(bpy.context.scene.fast64.sm64.blender_to_sm64_scale, 4) @ rootPoseBone.matrix_basis
-        ).decompose()[0]
-        saveTranslationFrame(translationData, translation)
+                # --- Translation ---
+                translation = (
+                    mathutils.Matrix.Scale(bpy.context.scene.fast64.sm64.blender_to_sm64_scale, 4)
+                    @ poseBone.matrix_basis
+                ).decompose()[0]
+                for i in range(3):
+                    boneFrameData[boneIndex][i].frames.append(
+                        (min(int(round(translation[i])), 2**16 - 1))
+                    )
 
-        for boneIndex in range(len(animBones)):
-            boneName = animBones[boneIndex]
-            currentBone = armatureObj.data.bones[boneName]
-            currentPoseBone = armatureObj.pose.bones[boneName]
+                # --- Rotation ---
+                rotationValue = (bone.matrix.to_4x4().inverted() @ poseBone.matrix).to_quaternion()
+                if bone.parent is not None:
+                    rotationValue = (
+                        bone.matrix.to_4x4().inverted()
+                        @ poseBone.parent.matrix.inverted()
+                        @ poseBone.matrix
+                    ).to_quaternion()
 
-            rotationValue = (currentBone.matrix.to_4x4().inverted() @ currentPoseBone.matrix).to_quaternion()
-            if currentBone.parent is not None:
-                rotationValue = (
-                    currentBone.matrix.to_4x4().inverted()
-                    @ currentPoseBone.parent.matrix.inverted()
-                    @ currentPoseBone.matrix
-                ).to_quaternion()
+                for i in range(3):
+                    field = rotationValue.to_euler()[i]
+                    value = (math.degrees(field) % 360) / 360
+                    boneFrameData[boneIndex][i + 3].frames.append(
+                        min(int(round(value * (2**16 - 1))), 2**16 - 1)
+                    )
 
-                # rest pose local, compared to current pose local
+        bpy.context.scene.frame_set(currentFrame)
 
-            saveQuaternionFrame(armatureFrameData[boneIndex], rotationValue)
+        for frames in boneFrameData:
+            removeTrailingFrames(frames)
 
-    bpy.context.scene.frame_set(currentFrame)
-    removeTrailingFrames(translationData)
-    for frameData in armatureFrameData:
-        removeTrailingFrames(frameData)
+        return boneFrameData
 
-    return translationData, armatureFrameData
+    else:
+        # Original behavior: root translation + rotations
+        translationData = [ValueFrameData(0, i, []) for i in range(3)]
+        armatureFrameData = [
+            [ValueFrameData(i, 0, []), ValueFrameData(i, 1, []), ValueFrameData(i, 2, [])]
+            for i in range(len(animBones))
+        ]
+
+        currentFrame = bpy.context.scene.frame_current
+        for frame in range(frame_start, frame_start + frame_count):
+            bpy.context.scene.frame_set(frame)
+            rootPoseBone = armatureObj.pose.bones[animBones[0]]
+
+            translation = (
+                mathutils.Matrix.Scale(bpy.context.scene.fast64.sm64.blender_to_sm64_scale, 4)
+                @ rootPoseBone.matrix_basis
+            ).decompose()[0]
+            saveTranslationFrame(translationData, translation)
+
+            for boneIndex, boneName in enumerate(animBones):
+                bone = armatureObj.data.bones[boneName]
+                poseBone = armatureObj.pose.bones[boneName]
+
+                rotationValue = (bone.matrix.to_4x4().inverted() @ poseBone.matrix).to_quaternion()
+                if bone.parent is not None:
+                    rotationValue = (
+                        bone.matrix.to_4x4().inverted()
+                        @ poseBone.parent.matrix.inverted()
+                        @ poseBone.matrix
+                    ).to_quaternion()
+
+                saveQuaternionFrame(armatureFrameData[boneIndex], rotationValue)
+
+        bpy.context.scene.frame_set(currentFrame)
+        removeTrailingFrames(translationData)
+        for frameData in armatureFrameData:
+            removeTrailingFrames(frameData)
+
+        return translationData, armatureFrameData
 
 
 def getNextBone(boneStack, armatureObj):
@@ -899,6 +952,7 @@ class SM64_ExportAnimPanel(SM64_Panel):
         if context.scene.fast64.sm64.export_type == "C":
             col.prop(context.scene, "animCustomExport")
             col.prop(context.scene, "smluaAnimation")
+            col.prop(context.scene, "perBoneTrans")
             if context.scene.animCustomExport:
                 col.prop(context.scene, "animExportPath")
                 prop_split(col, context.scene, "animName", "Name")
@@ -1108,6 +1162,7 @@ def sm64_anim_register():
 
     #Coop 
     bpy.types.Scene.smluaAnimation = bpy.props.BoolProperty(name="SMLua Animation")
+    bpy.types.Scene.perBoneTrans = bpy.props.BoolProperty(name="Per-bone Translation")
     bpy.types.Scene.animExportHeaderType = bpy.props.EnumProperty(
         items=enumExportHeaderType, name="Header Export", default="Actor"
     )
@@ -1122,6 +1177,7 @@ def sm64_anim_unregister():
     del bpy.types.Scene.animStartImport
     #Coop
     del bpy.types.Scene.smluaAnimation
+    del bpy.types.Scene.perBoneTrans
     del bpy.types.Scene.animExportStart
     del bpy.types.Scene.animExportEnd
     del bpy.types.Scene.levelAnimImport
