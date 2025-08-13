@@ -249,6 +249,7 @@ def exportAnimationC(armatureObj, loopAnim, dirPath, dirName, groupName, customE
         animFileName = "anim_" + toAlnum(animName) + ".inc.c"
         animPath = os.path.join(animDirPath, animFileName)
         data = sm64_anim.to_c()
+        if bpy.context.scene.perBoneTrans: data.header.repetitions |= (1 << 8)
         outFile = open(animPath, "w", newline="\n")
         outFile.write(data.source)
 
