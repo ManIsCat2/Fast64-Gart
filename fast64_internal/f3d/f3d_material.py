@@ -119,6 +119,34 @@ sm64EnumPlayerParts = [
 ]
 
 
+sm64PlayerPartsCopyOtherEnum = [
+    ("None", "None", "None"),
+    ("3", "Pants (Light)", "Overalls"),
+    ("4", "Pants (Ambient)", "Overalls"),
+
+    ("5", "Shirt (Light)", "Shirt"),
+    ("6", "Shirt (Ambient)", "Shirt"),
+
+    ("7", "Gloves (Light)", "Gloves"),
+    ("8", "Gloves (Ambient)", "Gloves"),
+
+    ("9", "Shoes (Light)", "Shoes"),
+    ("10", "Shoes (Ambient)", "Shoes"),
+    
+    ("11", "Hair (Light)", "Hair"),
+    ("12", "Hair (Ambient)", "Hair"),
+
+    ("13", "Skin (Light)", "Skin"),
+    ("14", "Skin (Ambient)", "Skin"),
+
+    ("15", "Cap (Light)", "Cap"),
+    ("16", "Cap (Ambient)", "Cap"),
+
+    ("17", "Emblem (Light)", "Emblem"),
+    ("18", "Emblem (Ambient)", "Emblem"),
+]
+
+
 ootEnumDrawLayers = [
     ("Opaque", "Opaque", "Opaque"),
     ("Transparent", "Transparent", "Transparent"),
@@ -861,6 +889,9 @@ class F3DPanel(Panel):
         else:
             prop_input_name.label(text="Primitive Color")
 
+        if get_F3D_GBI().F3DEX_GBI_2E:
+            prop_split(layout, material.f3d_mat, "coopcopyprim", "Primitive Color Player Part")
+
         prop_input.prop(f3dMat, "prim_color", text="")
         prop_input.prop(f3dMat, "prim_lod_frac", text="Prim LOD Fraction")
         prop_input.prop(f3dMat, "prim_lod_min", text="Min LOD Ratio")
@@ -877,6 +908,8 @@ class F3DPanel(Panel):
         else:
             prop_input_name.label(text="Environment Color")
         prop_input.prop(material.f3d_mat, "env_color", text="")
+        if get_F3D_GBI().F3DEX_GBI_2E:
+            prop_split(layout, material.f3d_mat, "coopcopyenv", "Environment Color Player Part")
         setProp = material.f3d_mat.set_env
         prop_input.enabled = setProp
         return inputGroup
@@ -4730,6 +4763,8 @@ class F3DMaterialProperty(PropertyGroup):
     coopplayerpart: bpy.props.PointerProperty(type=CoopPlayerPartProperty)
     coopkeepambient: bpy.props.BoolProperty()
     coopkeeplight: bpy.props.BoolProperty()
+    coopcopyenv: bpy.props.EnumProperty(items=sm64PlayerPartsCopyOtherEnum, default="None")
+    coopcopyprim: bpy.props.EnumProperty(items=sm64PlayerPartsCopyOtherEnum, default="None")
 
     def key(self) -> F3DMaterialHash:
         useDefaultLighting = self.set_lights and self.use_default_lighting

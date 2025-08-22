@@ -1468,16 +1468,55 @@ def saveOrGetF3DMaterial(material, fModel, obj, drawLayer, convertTextureData):
     multitexManager.writeAll(material, fMaterial, fModel, convertTextureData)
 
     # Write colors
+
+    LUTCopyLights = {
+        3: 0,
+        4: 0,
+
+        5: 1,
+        6: 1,
+
+        7: 2,
+        8: 2,
+                
+        9: 3,
+        10: 3,
+
+        11: 4,
+        12: 4,
+
+        13: 5,
+        14: 5,
+
+        15: 6,
+        16: 6,
+
+        17: 7,
+        18: 7,
+    }
+
     nodes = material.node_tree.nodes
     if useDict["Primitive"] and f3dMat.set_prim:
         color = exportColor(f3dMat.prim_color[0:3]) + [scaleToU8(f3dMat.prim_color[3])]
         fMaterial.mat_only_DL.commands.append(
             DPSetPrimColor(scaleToU8(f3dMat.prim_lod_min), scaleToU8(f3dMat.prim_lod_frac), *color)
         )
+        if f3dMat.coopcopyprim != "None" and get_F3D_GBI().F3DEX_GBI_2E:
+            fMaterial.mat_only_DL.commands.append(SPCopyPlayerPartToColor(
+                "G_COL_PRIM",
+                LUTCopyLights[int(f3dMat.coopcopyprim)],
+                1 if int(f3dMat.coopcopyprim) % 2 == 0 else 0
+                ))
 
     if useDict["Environment"] and f3dMat.set_env:
         color = exportColor(f3dMat.env_color[0:3]) + [scaleToU8(f3dMat.env_color[3])]
         fMaterial.mat_only_DL.commands.append(DPSetEnvColor(*color))
+        if f3dMat.coopcopyenv != "None" and get_F3D_GBI().F3DEX_GBI_2E:
+            fMaterial.mat_only_DL.commands.append(SPCopyPlayerPartToColor(
+                "G_COL_ENV",
+                LUTCopyLights[int(f3dMat.coopcopyenv)],
+                1 if int(f3dMat.coopcopyenv) % 2 == 0 else 0
+                ))
 
     if useDict["Key"] and f3dMat.set_key:
         if material.mat_ver >= 4:
