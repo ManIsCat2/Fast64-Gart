@@ -382,6 +382,8 @@ class F3D:
         if F3DEX_GBI_2E:
             self.G_LIGHTING_ENGINE_EXT = 0x00004000
             self.G_PACKED_NORMALS_EXT = 0x00000080
+            self.G_FRESNEL_COLOR_EXT = 0x00000040
+            self.G_FRESNEL_ALPHA_EXT = 0x00400000
 
         self.allGeomModeFlags = {
             "G_ZBUFFER",
@@ -414,6 +416,8 @@ class F3D:
             self.allGeomModeFlags |= {
                 "G_LIGHTING_ENGINE_EXT",
                 "G_PACKED_NORMALS_EXT",
+                "G_FRESNEL_COLOR_EXT",
+                "G_FRESNEL_ALPHA_EXT",
             }
 
         self.G_FOG_H = self.G_FOG / 0x10000

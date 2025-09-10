@@ -228,7 +228,8 @@ F3DEX3_GEO_MODES = {
 F3DEX2E_GEO_MODES = {
     "lightingEngine": "g_lighting_engine",
     "packedNormals": "g_packed_normals",
-    #"lightToAlpha": "g_lighttoalpha",
+    "fresnelToColor": "g_fresnel_color",
+    "fresnelToAlpha": "g_fresnel_alpha",
 }
 
 T3D_GEO_MODES = {
@@ -260,6 +261,8 @@ def sources_in_ucode(UCODE_VER: str):
         sources.extend(["Lighting", "Clip Ratio"])
     if isUcodeF3DEX3(UCODE_VER):
         sources.extend(["AO", "Fresnel", "ST Attr Offset", "Z Attr Offset"])
+    if isUcodeF3DEX2E(UCODE_VER):
+        sources.extend(["Fresnel"])
     return sources
 
 

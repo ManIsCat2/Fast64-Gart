@@ -1654,6 +1654,8 @@ def saveGeoModeCommon(saveFunc: Callable, settings: RDPSettings, defaults: RDPSe
     if bpy.context.scene.f3d_type == "F3DEX2E":
         saveFunc(settings.g_lighting_engine, defaults.g_lighting_engine, "G_LIGHTING_ENGINE_EXT", *args)
         saveFunc(settings.g_packed_normals, defaults.g_packed_normals, "G_PACKED_NORMALS_EXT", *args)
+        saveFunc(settings.g_fresnel_color, defaults.g_fresnel_color, "G_FRESNEL_COLOR_EXT", *args)
+        saveFunc(settings.g_fresnel_alpha, defaults.g_fresnel_color, "G_FRESNEL_ALPHA_EXT", *args)
     saveFunc(settings.g_tex_gen, defaults.g_tex_gen, "G_TEXTURE_GEN", *args)
     saveFunc(settings.g_tex_gen_linear, defaults.g_tex_gen_linear, "G_TEXTURE_GEN_LINEAR", *args)
     saveFunc(settings.g_lod, defaults.g_lod, "G_LOD", *args)

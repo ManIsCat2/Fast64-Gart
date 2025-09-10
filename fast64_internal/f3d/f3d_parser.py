@@ -905,6 +905,10 @@ class F3DContext:
                 rdp_settings.g_lighting_engine = value
             if bitFlags & self.f3d.G_PACKED_NORMALS_EXT:
                 rdp_settings.g_packed_normals = value
+            if bitFlags & self.f3d.G_FRESNEL_COLOR_EXT:
+                rdp_settings.g_fresnel_color = value
+            if bitFlags & self.f3d.G_FRESNEL_ALPHA_EXT:
+                rdp_settings.g_fresnel_alpha = value
         if bitFlags & self.f3d.G_FOG:
             rdp_settings.g_fog = value
         if bitFlags & self.f3d.G_LIGHTING:
@@ -945,13 +949,15 @@ class F3DContext:
             rdp_settings.g_attroffset_z_enable = False
             rdp_settings.g_attroffset_st_enable = False
             if self.f3d.F3DEX_GBI_2E:
-                rdp_settings.g_packed_normals = bitFlags & self.f3d.G_PACKED_NORMALS != 0
+                rdp_settings.g_packed_normals = bitFlags & self.f3d.G_PACKED_NORMALS_EXT != 0
+                rdp_settings.g_fresnel_color = bitFlags & self.f3d.G_FRESNEL_COLOR_EXT != 0
+                rdp_settings.g_fresnel_alpha = bitFlags & self.f3d.G_FRESNEL_ALPHA_EXT != 0
             else:
                 rdp_settings.g_packed_normals = False
+                rdp_settings.g_fresnel_color = False
+                rdp_settings.g_fresnel_alpha = False
             rdp_settings.g_lighttoalpha = False
             rdp_settings.g_lighting_specular = False
-            rdp_settings.g_fresnel_color = False
-            rdp_settings.g_fresnel_alpha = False
         rdp_settings.g_fog = bitFlags & self.f3d.G_FOG != 0
         rdp_settings.g_lighting = bitFlags & self.f3d.G_LIGHTING != 0
         rdp_settings.g_lighting_engine = bitFlags & self.f3d.G_LIGHTING_ENGINE_EXT != 0
