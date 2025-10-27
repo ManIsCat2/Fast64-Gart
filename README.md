@@ -1,3 +1,33 @@
+# Fast64 Gart Edition
+
+This is a fast64 fork, it adds alot of sm64coopdx specific stuff so you can make models easier!
+
+## F3DEX2E Custom Microcode
+This is the microcode the sm64coopdx uses, this ucode supports Packed Normals and Fresnel, both have the exact same functionallity as their F3DEX3 version, This microcode is also needed to get Coop Recolorability options to show up.
+
+## Coop Recolorability
+
+You can select the player part that the material will get binded to:
+
+![alt-text](/images/coop_colors1.png)
+
+Option "None" makes it use the materal's light and ambient, Other options makes it use the in-game player colors:
+
+![alt-text](/images/coop_colors2.png)
+
+You can also modify these options so it only uses 1 part of the player colors:
+
+![alt-text](/images/coop_colors2.5.png)
+
+There's also support for binding Environment Color and Primitive Color to a player part (sm64coopdx 1.4+):
+
+![alt-text](/images/coop_colors3.png)
+
+Note that these support binding to both Light and Ambient:
+
+![alt-text](/images/coop_colors4.png)
+
+
 # Fast64
 
 This requires Blender 3.2+. Blender 4.0+ is recommended.
