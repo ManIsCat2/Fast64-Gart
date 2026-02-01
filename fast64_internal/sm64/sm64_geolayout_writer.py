@@ -86,10 +86,6 @@ from ..f3d.f3d_gbi import (
     GfxListTag,
     GfxMatWriteMethod,
     DPSetAlphaCompare,
-    DPSetTextureImage,
-    DPSetTile,
-    DPLoadBlock,
-    DPSetTileSize,
     FModel,
     FMesh,
     SPVertex,
@@ -465,21 +461,6 @@ def add_overrides_to_fmodel(f_model: SM64Model):
             if cmd_list not in f_mesh.draw_overrides:
                 f_mesh.draw_overrides.append(cmd_list)
 
-        for node in geolayoutGraph.startGeolayout.nodes:
-            last_gfx_list = walk(node, [dict()])
-
-        # Revert settings in each unique draw layer
-        reverted_gfx_lists = set()
-        for draw_layer_dict in last_gfx_list:
-            for gfx_list in draw_layer_dict.values():
-                if gfx_list in reverted_gfx_lists:
-                    continue
-                # remove SPEndDisplayList from gfx_list, materialRevert has its own SPEndDisplayList cmd
-                while SPEndDisplayList() in gfx_list.commands:
-                    gfx_list.commands.remove(SPEndDisplayList())
-
-                gfx_list.commands.extend(materialRevert.commands)
-                reverted_gfx_lists.add(gfx_list)
 
 # Convert to Geolayout
 def convertArmatureToGeolayout(armatureObj, obj, convertTransformMatrix, camera, name, DLFormat, convertTextureData):
@@ -1690,12 +1671,6 @@ def processBone(
         if bone.geo_func == "":
             raise PluginError("Function bone " + boneName + " function value is empty.")
         node = FunctionNode(bone.geo_func, bone.func_param)
-    elif bone.geo_cmd == "RecolorCommands":
-        node = CoopRecolorCommands(bone.geo_func, bone.func_param)
-    elif bone.geo_cmd == "CoopMirrorCommands":
-        node = CoopMirrorCommands(bone.geo_func, bone.func_param)
-    elif bone.geo_cmd == "CoopMirrorCommands2":
-        node = CoopMirrorCommands2(bone.geo_func, bone.func_param)
     elif bone.geo_cmd == "HeldObject":
         if bone.geo_func == "":
             raise PluginError("Held object bone " + boneName + " function value is empty.")
