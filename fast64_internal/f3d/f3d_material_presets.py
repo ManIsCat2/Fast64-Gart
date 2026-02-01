@@ -1905,13 +1905,13 @@ f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
 f3d_mat.presetName = 'Sm64 Decal'
 """
 
-sm64_environment_map = """
+sm64_unlit_environment_map = """
 
 import bpy
 f3d_mat = bpy.context.material.f3d_mat
 bpy.context.material.f3d_update_flag = True
 
-f3d_mat.name = ''
+f3d_mat.name = 'Sm64 Unlit Environment Map'
 f3d_mat.combiner1.name = ''
 f3d_mat.combiner1.A = '0'
 f3d_mat.combiner1.B = '0'
@@ -2020,8 +2020,26 @@ f3d_mat.draw_layer.sm64 = '1'
 f3d_mat.draw_layer.oot = 'Opaque'
 bpy.context.material.f3d_update_flag = False
 f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
-f3d_mat.presetName = 'Sm64 Environment Map'
+f3d_mat.presetName = 'Sm64 Unlit Environment Map'
 """
+
+sm64_shaded_environment_map = (
+    sm64_unlit_environment_map
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.combiner1.A = 'TEXEL0'
+f3d_mat.combiner1.B = '0'
+f3d_mat.combiner1.C = 'SHADE'
+f3d_mat.combiner1.D = '0'
+f3d_mat.combiner1.A_alpha = '0'
+f3d_mat.combiner1.B_alpha = '0'
+f3d_mat.combiner1.C_alpha = '0'
+f3d_mat.combiner1.D_alpha = 'ENVIRONMENT'
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+f3d_mat.presetName = 'Sm64 Shaded Environment Map'
+"""
+)
 
 sm64_fog_shaded_texture = """
 
@@ -3109,7 +3127,7 @@ f3d_mat.combiner2.D = 'TEXEL0'
 f3d_mat.combiner2.A_alpha = '0'
 f3d_mat.combiner2.B_alpha = '0'
 f3d_mat.combiner2.C_alpha = '0'
-f3d_mat.combiner2.D_alpha = 'ENVIRONMENT'
+f3d_mat.combiner2.D_alpha = 'TEXEL0'
 f3d_mat.tex0.tex_set = True
 f3d_mat.tex1.tex_set = True
 f3d_mat.set_prim = True
@@ -6692,166 +6710,124 @@ f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
 f3d_mat.presetName = 'Oot Water Mult Specular Fresnel'
 """
 
-sm64_metal_texture = """
-import bpy
-f3d_mat = bpy.context.material.f3d_mat
+# SM64 Lighting Engine specific
 
+lighting_engine_sm64_decal = (
+    sm64_decal
+    + """
 bpy.context.material.f3d_update_flag = True
-f3d_mat.presetName = 'Sm64 Metal Texture'
-f3d_mat.combiner1.name = ''
 f3d_mat.combiner1.A = 'TEXEL0'
-f3d_mat.combiner1.B = '0'
-f3d_mat.combiner1.C = 'SHADE'
-f3d_mat.combiner1.D = 'TEXEL1'
+f3d_mat.combiner1.B = 'PRIMITIVE'
+f3d_mat.combiner1.C = 'TEXEL0_ALPHA'
+f3d_mat.combiner1.D = 'PRIMITIVE'
 f3d_mat.combiner1.A_alpha = '0'
 f3d_mat.combiner1.B_alpha = '0'
 f3d_mat.combiner1.C_alpha = '0'
 f3d_mat.combiner1.D_alpha = 'ENVIRONMENT'
-f3d_mat.combiner2.name = ''
-f3d_mat.combiner2.A = '0'
+f3d_mat.combiner2.A = 'COMBINED'
 f3d_mat.combiner2.B = '0'
-f3d_mat.combiner2.C = '0'
-f3d_mat.combiner2.D = 'TEXEL0'
+f3d_mat.combiner2.C = 'SHADE'
+f3d_mat.combiner2.D = '0'
 f3d_mat.combiner2.A_alpha = '0'
 f3d_mat.combiner2.B_alpha = '0'
 f3d_mat.combiner2.C_alpha = '0'
-f3d_mat.combiner2.D_alpha = 'ENVIRONMENT'
-f3d_mat.tex0.name = ''
-f3d_mat.tex0.tex_set = True
-f3d_mat.tex1.name = ''
-f3d_mat.tex1.tex_set = True
+f3d_mat.combiner2.D_alpha = 'COMBINED'
 f3d_mat.set_prim = True
-f3d_mat.set_lights = True
-f3d_mat.set_env = False
-f3d_mat.set_blend = False
-f3d_mat.set_key = True
-f3d_mat.set_k0_5 = True
-f3d_mat.set_combiner = True
-f3d_mat.use_default_lighting = True
-f3d_mat.blend_color = (0.0, 0.0, 0.0, 1.0)
-f3d_mat.prim_color = (0.5, 0.5, 0.5, 1.0)
-f3d_mat.env_color = (0.5, 0.5, 0.5, 1.0)
-f3d_mat.key_center = (0.5, 0.5, 0.5, 1.0)
-f3d_mat.key_scale = (0.0, 0.0, 0.0)
-f3d_mat.key_width = (0.0, 0.0, 0.0)
-f3d_mat.k0 = 0.686274528503418
-f3d_mat.k1 = -0.16862745583057404
-f3d_mat.k2 = -0.3490196168422699
-f3d_mat.k3 = 0.8705882430076599
-f3d_mat.k4 = 0.4470588266849518
-f3d_mat.k5 = 0.16470588743686676
-f3d_mat.prim_lod_frac = 0.0
-f3d_mat.prim_lod_min = 0.0
-f3d_mat.default_light_color = (0.0, 0.0, 0.0, 1.0)
-f3d_mat.set_ambient_from_light = False
-f3d_mat.ambient_light_color = (1.0, 1.0, 1.0, 1.0)
-f3d_mat.f3d_light1 = None
-f3d_mat.f3d_light2 = None
-f3d_mat.f3d_light3 = None
-f3d_mat.f3d_light4 = None
-f3d_mat.f3d_light5 = None
-f3d_mat.f3d_light6 = None
-f3d_mat.f3d_light7 = None
-f3d_mat.ao_ambient = 1.0
-f3d_mat.ao_directional = 0.625
-f3d_mat.ao_point = 0.0
-f3d_mat.set_ao = False
-f3d_mat.fresnel_lo = 0.699999988079071
-f3d_mat.fresnel_hi = 0.4000000059604645
-f3d_mat.set_fresnel = False
-f3d_mat.attroffs_st = (0.0, 0.0)
-f3d_mat.attroffs_z = -2
-f3d_mat.set_attroffs_st = False
-f3d_mat.set_attroffs_z = False
-f3d_mat.fog_color = (0.0, 0.0, 0.0, 1.0)
-f3d_mat.fog_position = (970, 1000)
-f3d_mat.set_fog = False
-f3d_mat.use_global_fog = True
-f3d_mat.rdp_settings.name = ''
-f3d_mat.rdp_settings.g_zbuffer = True
-f3d_mat.rdp_settings.g_shade = True
-f3d_mat.rdp_settings.g_lighting_engine = False
-f3d_mat.coopplayerpart.name = ''
-f3d_mat.coopplayerpart.sm64 = 'None'
-f3d_mat.coopplayerpart.oot = 'Opaque'
-f3d_mat.coopkeepambient = False
-f3d_mat.coopkeeplight = False
-f3d_mat.rdp_settings.g_ambocclusion = False
-f3d_mat.rdp_settings.g_attroffset_z_enable = False
-f3d_mat.rdp_settings.g_attroffset_st_enable = False
-f3d_mat.rdp_settings.g_cull_front = False
-f3d_mat.rdp_settings.g_cull_back = True
-f3d_mat.rdp_settings.g_packed_normals = False
-f3d_mat.rdp_settings.g_lighttoalpha = False
-f3d_mat.rdp_settings.g_lighting_specular = False
-f3d_mat.rdp_settings.g_fresnel_color = False
-f3d_mat.rdp_settings.g_fresnel_alpha = False
-f3d_mat.rdp_settings.g_fog = False
-f3d_mat.rdp_settings.g_lighting = True
-f3d_mat.rdp_settings.g_tex_gen = True
-f3d_mat.rdp_settings.g_tex_gen_linear = False
-f3d_mat.rdp_settings.g_lod = False
-f3d_mat.rdp_settings.g_shade_smooth = True
-f3d_mat.rdp_settings.g_clipping = False
-f3d_mat.rdp_settings.g_mdsft_alpha_dither = 'G_AD_NOISE'
-f3d_mat.rdp_settings.g_mdsft_rgb_dither = 'G_CD_MAGICSQ'
-f3d_mat.rdp_settings.g_mdsft_combkey = 'G_CK_NONE'
-f3d_mat.rdp_settings.g_mdsft_textconv = 'G_TC_FILT'
-f3d_mat.rdp_settings.g_mdsft_text_filt = 'G_TF_BILERP'
-f3d_mat.rdp_settings.g_mdsft_textlut = 'G_TT_NONE'
-f3d_mat.rdp_settings.g_mdsft_textlod = 'G_TL_TILE'
-f3d_mat.rdp_settings.num_textures_mipmapped = 2
-f3d_mat.rdp_settings.g_mdsft_textdetail = 'G_TD_CLAMP'
-f3d_mat.rdp_settings.g_mdsft_textpersp = 'G_TP_PERSP'
-f3d_mat.rdp_settings.g_mdsft_cycletype = 'G_CYC_1CYCLE'
-f3d_mat.rdp_settings.g_mdsft_color_dither = 'G_CD_ENABLE'
-f3d_mat.rdp_settings.g_mdsft_pipeline = 'G_PM_1PRIMITIVE'
-f3d_mat.rdp_settings.g_mdsft_alpha_compare = 'G_AC_NONE'
-f3d_mat.rdp_settings.g_mdsft_zsrcsel = 'G_ZS_PIXEL'
-f3d_mat.rdp_settings.prim_depth.name = ''
-f3d_mat.rdp_settings.prim_depth.z = 0
-f3d_mat.rdp_settings.prim_depth.dz = 0
-f3d_mat.rdp_settings.clip_ratio = 1
-f3d_mat.rdp_settings.set_rendermode = False
+f3d_mat.set_lights = False
+f3d_mat.rdp_settings.g_mdsft_cycletype = 'G_CYC_2CYCLE'
+f3d_mat.rdp_settings.set_rendermode = True
 f3d_mat.rdp_settings.rendermode_advanced_enabled = False
-f3d_mat.rdp_settings.rendermode_preset_cycle_1 = 'G_RM_AA_ZB_OPA_SURF'
+f3d_mat.rdp_settings.rendermode_preset_cycle_1 = 'G_RM_NOOP'
 f3d_mat.rdp_settings.rendermode_preset_cycle_2 = 'G_RM_AA_ZB_OPA_SURF2'
-f3d_mat.rdp_settings.aa_en = True
-f3d_mat.rdp_settings.z_cmp = True
-f3d_mat.rdp_settings.z_upd = True
-f3d_mat.rdp_settings.im_rd = True
-f3d_mat.rdp_settings.clr_on_cvg = False
-f3d_mat.rdp_settings.cvg_dst = 'CVG_DST_CLAMP'
-f3d_mat.rdp_settings.zmode = 'ZMODE_OPA'
-f3d_mat.rdp_settings.cvg_x_alpha = False
-f3d_mat.rdp_settings.alpha_cvg_sel = True
-f3d_mat.rdp_settings.force_bl = False
-f3d_mat.rdp_settings.blend_p1 = 'G_BL_CLR_IN'
-f3d_mat.rdp_settings.blend_p2 = 'G_BL_CLR_IN'
-f3d_mat.rdp_settings.blend_m1 = 'G_BL_CLR_MEM'
-f3d_mat.rdp_settings.blend_m2 = 'G_BL_CLR_MEM'
-f3d_mat.rdp_settings.blend_a1 = 'G_BL_A_IN'
-f3d_mat.rdp_settings.blend_a2 = 'G_BL_A_IN'
-f3d_mat.rdp_settings.blend_b1 = 'G_BL_A_MEM'
-f3d_mat.rdp_settings.blend_b2 = 'G_BL_A_MEM'
-f3d_mat.draw_layer.name = ''
-f3d_mat.draw_layer.sm64 = '1'
-f3d_mat.draw_layer.oot = 'Opaque'
-f3d_mat.large_edges = 'Clamp'
-f3d_mat.expand_cel_shading_ui = False
-f3d_mat.use_cel_shading = False
-f3d_mat.cel_shading.name = ''
-f3d_mat.cel_shading.tintPipeline = 'CC'
-f3d_mat.cel_shading.cutoutSource = 'ENVIRONMENT'
-f3d_mat.cel_shading.levels.clear()
-f3d_mat.coopplayerpart.name = ''
-f3d_mat.coopplayerpart.sm64 = '6'
-f3d_mat.coopplayerpart.oot = 'Opaque'
-f3d_mat.coopkeepambient = True
-f3d_mat.coopkeeplight = False
 bpy.context.material.f3d_update_flag = False
 f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
 """
+)
+
+lighting_engine_sm64_fog_shaded_texture = (
+    sm64_fog_shaded_texture
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.set_lights = False
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+"""
+)
+
+lighting_engine_sm64_fog_shaded_texture_cutout = (
+    sm64_fog_shaded_texture_cutout
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.set_lights = False
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+"""
+)
+
+lighting_fog_shaded_texture_transparent = (
+    sm64_fog_shaded_texture_transparent
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.set_lights = False
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+"""
+)
+
+lighting_engine_sm64_shaded_noise = (
+    sm64_shaded_noise
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.set_lights = False
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+"""
+)
+
+lighting_engine_sm64_shaded_solid = (
+    sm64_shaded_solid
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.combiner1.A = 'PRIMITIVE'
+f3d_mat.combiner1.B = '0'
+f3d_mat.combiner1.C = 'SHADE'
+f3d_mat.combiner1.D = '0'
+f3d_mat.set_lights = False
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+"""
+)
+
+lighting_engine_sm64_shaded_texture_cutout = (
+    sm64_shaded_texture_cutout
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.set_lights = False
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+"""
+)
+
+
+lighting_engine_sm64_shaded_texture_transparent = (
+    sm64_shaded_texture_transparent
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.set_lights = False
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+"""
+)
+
+lighting_engine_sm64_shaded_environment_map = (
+    sm64_shaded_environment_map
+    + """
+bpy.context.material.f3d_update_flag = True
+f3d_mat.set_lights = False
+bpy.context.material.f3d_update_flag = False
+f3d_mat.use_default_lighting = f3d_mat.use_default_lighting # Force nodes update
+"""
+)
 
 homebrew_and_oot = {
     "shaded_environment_mapped": shaded_environment_mapped,
@@ -6872,6 +6848,7 @@ homebrew_and_oot = {
     "vertex_colored_texture_cutout": vertex_colored_texture_cutout,
     "vertex_colored_texture_transparent": vertex_colored_texture_transparent,
 }
+
 material_presets = {
     "homebrew": homebrew_and_oot,
     "oot": {
@@ -6903,7 +6880,6 @@ material_presets = {
     },
     "sm64": {
         "sm64_decal": sm64_decal,
-        "sm64_environment_map": sm64_environment_map,
         "sm64_fog_shaded_texture": sm64_fog_shaded_texture,
         "sm64_fog_shaded_texture_cutout": sm64_fog_shaded_texture_cutout,
         "sm64_fog_shaded_texture_transparent": sm64_fog_shaded_texture_transparent,
@@ -6912,6 +6888,24 @@ material_presets = {
         "sm64_shaded_texture": sm64_shaded_texture,
         "sm64_shaded_texture_cutout": sm64_shaded_texture_cutout,
         "sm64_shaded_texture_transparent": sm64_shaded_texture_transparent,
+        "sm64_shaded_environment_map": sm64_shaded_environment_map,
+        "sm64_unlit_environment_map": sm64_unlit_environment_map,
+        "sm64_unlit_texture": sm64_unlit_texture,
+        "sm64_unlit_texture_cutout": sm64_unlit_texture_cutout,
+        "sm64_vertex_colored_texture": sm64_vertex_colored_texture,
+        "sm64_vertex_colored_texture_transparent": sm64_vertex_colored_texture_transparent,
+    },
+    "sm64_lighting_engine": {
+        "sm64_decal": lighting_engine_sm64_decal,
+        "sm64_fog_shaded_texture": lighting_engine_sm64_fog_shaded_texture,
+        "sm64_fog_shaded_texture_cutout": lighting_engine_sm64_fog_shaded_texture_cutout,
+        "sm64_fog_shaded_texture_transparent": lighting_fog_shaded_texture_transparent,
+        "sm64_shaded_noise": lighting_engine_sm64_shaded_noise,
+        "sm64_shaded_solid": lighting_engine_sm64_shaded_solid,
+        "sm64_shaded_texture_cutout": lighting_engine_sm64_shaded_texture_cutout,
+        "sm64_shaded_texture_transparent": lighting_engine_sm64_shaded_texture_transparent,
+        "sm64_shaded_environment_map": lighting_engine_sm64_shaded_environment_map,
+        "sm64_unlit_environment_map": sm64_unlit_environment_map,
         "sm64_unlit_texture": sm64_unlit_texture,
         "sm64_unlit_texture_cutout": sm64_unlit_texture_cutout,
         "sm64_vertex_colored_texture": sm64_vertex_colored_texture,
