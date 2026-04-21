@@ -2012,6 +2012,10 @@ class SM64_ExportCombinedObject(ObjectDataExporter):
                 if props.export_single_action:
                     export_animation(context, obj)
                 else:
+                    if props.smlua_anim:
+                        raise PluginError(
+                            "SMLua Animations cannot be exported as animtable"
+                        )
                     export_animation_table(context, obj)
         except Exception as exc:
             # pass on multiple export, throw on singular
@@ -2111,6 +2115,12 @@ class SM64_CombinedObjectProperties(bpy.types.PropertyGroup):
         name="Selected Action",
         description="Animation export will only export the armature's current action like in older versions of fast64",
     )
+    smlua_anim: bpy.props.BoolProperty(
+        name="Export to Lua",
+        description="Animation export will export to smlua animation format",
+    )
+    smlua_anim_path: bpy.props.StringProperty(name="Custom Anim Path", default="")
+    smlua_anim_name: bpy.props.StringProperty(name="Lua Anim Name", default="anim_walking")
     insertable_directory: bpy.props.StringProperty(name="Directory Path", subtype="FILE_PATH")
 
     # export options
@@ -2322,6 +2332,7 @@ class SM64_CombinedObjectProperties(bpy.types.PropertyGroup):
             col.label(text="May Break!", icon="INFO")
         if not is_dma and export_type == "C":
             col.prop(self, "export_single_action")
+            col.prop(self, "smlua_anim")
         if export_type == "Binary":
             if not is_dma:
                 prop_split(col, self, "level_name", "Level")
@@ -2436,7 +2447,7 @@ class SM64_CombinedObjectProperties(bpy.types.PropertyGroup):
     def draw_obj_name(self, layout):
         split_1 = layout.split(factor=0.45)
         split_2 = split_1.split(factor=0.45)
-        split_2.label(text="Name")
+        split_2.label(text="Actor Name" if self.smlua_anim else "Name")
         split_2.prop(self, "object_name", text="")
         if bpy.context.active_object:
             tmp_obj_name = self.filter_name(bpy.context.active_object.name)
@@ -2489,6 +2500,9 @@ class SM64_CombinedObjectProperties(bpy.types.PropertyGroup):
 
         if self.export_header_type == "Custom":
             prop_split(box, self, "custom_export_path", "Custom Path")
+            if self.smlua_anim:
+                prop_split(box, self, "smlua_anim_path", "Lua Anim Path")
+                prop_split(box, self, "smlua_anim_name", "Lua Anim Name")
             prop_split(box, self, "delete_all_bins", "Delete all .bin files")
             prop_split(box, self, "delete_all_cols", "Delete all .col files")
             if bpy.context.scene.saveTextures:

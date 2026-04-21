@@ -254,6 +254,9 @@ def to_header_class(
 
 
 def to_data_class(pairs: list[SM64_AnimPair], data_name="anim_00", file_name: str = "anim_00.inc.c"):
+    com_props = bpy.context.scene.fast64.sm64.combined_export
+    if com_props.smlua_anim:
+        data_name = com_props.smlua_anim_name
     return SM64_AnimData(pairs, f"{data_name}_indices", f"{data_name}_values", file_name, file_name)
 
 
@@ -912,7 +915,10 @@ def export_animation_c(
         anim_props, combined_props, actor_name, decomp
     )
 
-    (anim_directory / animation.file_name).write_text(animation.to_c(anim_props.is_dma))
+    if combined_props.smlua_anim:
+        (Path(combined_props.smlua_anim_path) / (combined_props.smlua_anim_name + ".lua")).write_text(animation.to_c(anim_props.is_dma))
+    else:
+        (anim_directory / animation.file_name).write_text(animation.to_c(anim_props.is_dma))
 
     if anim_props.is_dma:  # Don´t create an actual table and don´t update includes for dma exports
         return

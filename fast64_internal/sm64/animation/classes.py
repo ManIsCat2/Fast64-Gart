@@ -10,6 +10,7 @@ import typing
 import re
 
 from bpy.types import Action
+import bpy
 
 from ...f3d.f3d_parser import math_eval
 
@@ -290,7 +291,18 @@ class SM64_AnimHeader:
         assert not dma or isinstance(  # assert if dma and flags are not SM64_AnimFlags
             self.flags, SM64_AnimFlags
         ), f"Flags must be SM64_AnimFlags for C DMA, is instead {type(self.flags)}"
-        return (
+        com_props = bpy.context.scene.fast64.sm64.combined_export
+        return ("smlua_anim_util_register_animation(\n" +
+                f"\t'{com_props.smlua_anim_name}',\n" +
+                f"\t{self.c_flags},\n" +
+                f"\t{self.trans_divisor},\n" +
+                f"\t{self.start_frame},\n" +
+                f"\t{self.loop_start},\n" +
+                f"\t{self.loop_end},\n" +
+                "\t%s,\n" % (com_props.smlua_anim_name + "_values") +
+                "\t%s\n" % (com_props.smlua_anim_name + "_indices") +
+                ")\n\n"
+            if com_props.smlua_anim else 
             f"static const struct Animation {self.reference}{'[]' if dma else ''} = {{\n"
             + f"\t{self.c_flags}, // flags {self.flags_comment}\n"
             f"\t{self.trans_divisor}, // animYTransDivisor\n"

@@ -6,6 +6,7 @@ import shutil
 import struct
 import os
 import numpy as np
+import bpy
 
 from ..utility import intToHex, decodeSegmentedAddr, PluginError, toAlnum
 from .sm64_constants import insertableBinaryTypes, SegmentData
@@ -276,8 +277,15 @@ class IntArray:
         print(f'Generating {data_type} array "{self.name}" with {len(self.data)} elements')
 
         c_data = c_data or StringIO()
-        c_data.write(f"// {len(self.data)}\n")
-        c_data.write(f"static const {data_type} {toAlnum(self.name)}[] = {{\n\t")
+        commenter = "//"
+        smlua_anims = bpy.context.scene.fast64.sm64.combined_export.smlua_anim
+        if smlua_anims:
+            commenter = "--"
+        c_data.write(commenter + f" {len(self.data)}\n")
+        if smlua_anims:
+            c_data.write(f"local {toAlnum(self.name)} = {{\n\t")
+        else:
+            c_data.write(f"static const {data_type} {toAlnum(self.name)}[] = {{\n\t")
         i = self.wrap_start
         for value in self.data:
             c_data.write(f"{intToHex(value, byte_count, False)}, ")
