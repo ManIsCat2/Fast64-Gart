@@ -103,7 +103,7 @@ def save_repo_settings(scene: Scene, path: os.PathLike, game: str = ""):
     data["version"] = CUR_VERSION
     data.update(fast64_settings.to_repo_settings())
     data["microcode"] = scene.f3d_type
-    if scene.f3d_type in {"F3DEX3", "T3D"}:
+    if scene.f3d_type in {"F3DEX3", "T3D", "F3DEX2E"}:
         data["packedNormalsAlgorithm"] = scene.packed_normals_algorithm
     data["bleedAndInline"] = scene.exportInlineF3D
     data["saveTextures"] = scene.saveTextures

@@ -110,8 +110,16 @@ class F3D_GlobalSettingsPanel(bpy.types.Panel):
         prop_split(col, context.scene, "f3d_type", "Microcode")
         gbi = get_F3D_GBI()
 
-        if context.scene.f3d_type in {"F3DEX3", "T3D"}:
+        if context.scene.f3d_type in {"F3DEX3", "T3D", "F3DEX2E"}:
             prop_split(col, context.scene, "packed_normals_algorithm", "Packed normals alg")
+            if context.scene.f3d_type == "F3DEX2E" and context.scene.packed_normals_algorithm != "Octahedral":
+                warning = col.column()
+                warning.alert = True
+                multilineLabel(
+                    warning,
+                    "F3DEX2E only supports the Octahedral algorithm.",
+                    icon="ERROR",
+                )
         col.prop(context.scene, "saveTextures")
         col.prop(context.scene, "exportInlineF3D", text="Bleed and Inline Material Exports")
         if context.scene.exportInlineF3D:
