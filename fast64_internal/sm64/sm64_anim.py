@@ -242,14 +242,20 @@ def exportAnimationC(armatureObj, loopAnim, dirPath, dirName, groupName, customE
         animPath = os.path.join(dirPath, animFileName)
         data = sm64_anim
         outFile = open(animPath, "w", newline="\n")
-        if bpy.context.scene.perBoneTrans: data.header.repetitions |= (1 << 8)
+        if bpy.context.scene.perBoneTrans:
+            data.header.repetitions |= (1 << 8)
+        if bpy.context.scene.perBoneScale:
+            data.header.repetitions |= (1 << 9)
         beforeIndiciandValue = str(data.header.repetitions) +  ", " + str(data.header.marioYOffset) + ", " "0" +  ", " + str(int(round(data.header.frameInterval[0]))) +  ", " + str(int(round(data.header.frameInterval[1] - 1))) +  ", "
         outFile.write((f"smlua_anim_util_register_animation('{dirName}'" + ", ") + beforeIndiciandValue + "{" +  data.values.to_c().replace(");", "").replace("smlua_anim_util_register_animation(" + data.name + "_values,", "") + "}," + "{" + data.indices.to_c().replace(data.name + "_indices", "").replace("smlua_anim_util_register_animation", "").replace("(,", "").replace(");", "") + "}" + ");")
     else:
         animFileName = "anim_" + toAlnum(animName) + ".inc.c"
         animPath = os.path.join(animDirPath, animFileName)
         data = sm64_anim
-        if bpy.context.scene.perBoneTrans: data.header.repetitions |= (1 << 8)
+        if bpy.context.scene.perBoneTrans:
+            data.header.repetitions |= (1 << 8)
+        if bpy.context.scene.perBoneScale:
+            data.header.repetitions |= (1 << 9)
         data = sm64_anim.to_c()
         outFile = open(animPath, "w", newline="\n")
         outFile.write(data.source)
@@ -474,9 +480,10 @@ def convertAnimationData(anim, armatureObj, *, frame_start, frame_count):
         bonesToProcess = childrenNames + bonesToProcess
 
     if bpy.context.scene.perBoneTrans:
-        # Per-bone translation + rotation
+        # Per-bone translation + rotation, optionally per-bone scale.
+        framePropertyCount = 9 if bpy.context.scene.perBoneScale else 6
         boneFrameData = [
-            [ValueFrameData(i, j, []) for j in range(6)]  # 0-2: trans, 3-5: rot
+            [ValueFrameData(i, j, []) for j in range(framePropertyCount)]  # 0-2: trans, 3-5: rot, 6-8: scale
             for i in range(len(animBones))
         ]
 
@@ -513,6 +520,14 @@ def convertAnimationData(anim, armatureObj, *, frame_start, frame_count):
                         min(int(round(value * (2**16 - 1))), 2**16 - 1)
                     )
 
+                if bpy.context.scene.perBoneScale:
+                    scaleValue = poseBone.matrix_basis.decompose()[2]
+                    for i in range(3):
+                        # Runtime expects per-bone scale as fixed-point where 256 == 1.0.
+                        boneFrameData[boneIndex][i + 6].frames.append(
+                            min(int(round(scaleValue[i] * 256.0)), 2**16 - 1)
+                        )
+
         bpy.context.scene.frame_set(currentFrame)
 
         for frames in boneFrameData:
@@ -524,7 +539,7 @@ def convertAnimationData(anim, armatureObj, *, frame_start, frame_count):
         # Original behavior: root translation + rotations
         translationData = [ValueFrameData(0, i, []) for i in range(3)]
         armatureFrameData = [
-            [ValueFrameData(i, 0, []), ValueFrameData(i, 1, []), ValueFrameData(i, 2, [])]
+            [ValueFrameData(i, j, []) for j in range(6 if bpy.context.scene.perBoneScale else 3)]
             for i in range(len(animBones))
         ]
 
@@ -552,6 +567,13 @@ def convertAnimationData(anim, armatureObj, *, frame_start, frame_count):
                     ).to_quaternion()
 
                 saveQuaternionFrame(armatureFrameData[boneIndex], rotationValue)
+
+                if bpy.context.scene.perBoneScale:
+                    scaleValue = poseBone.matrix_basis.decompose()[2]
+                    for i in range(3):
+                        armatureFrameData[boneIndex][i + 3].frames.append(
+                            min(int(round(scaleValue[i] * 256.0)), 2**16 - 1)
+                        )
 
         bpy.context.scene.frame_set(currentFrame)
         removeTrailingFrames(translationData)
@@ -955,6 +977,7 @@ class SM64_ExportAnimPanel(SM64_Panel):
             col.prop(context.scene, "animCustomExport")
             col.prop(context.scene, "smluaAnimation")
             col.prop(context.scene, "perBoneTrans")
+            col.prop(context.scene, "perBoneScale")
             if context.scene.animCustomExport:
                 col.prop(context.scene, "animExportPath")
                 prop_split(col, context.scene, "animName", "Name")
@@ -1165,6 +1188,7 @@ def sm64_anim_register():
     #Coop 
     bpy.types.Scene.smluaAnimation = bpy.props.BoolProperty(name="SMLua Animation")
     bpy.types.Scene.perBoneTrans = bpy.props.BoolProperty(name="Per-bone Translation")
+    bpy.types.Scene.perBoneScale = bpy.props.BoolProperty(name="Per-bone Scale")
     bpy.types.Scene.animExportHeaderType = bpy.props.EnumProperty(
         items=enumExportHeaderType, name="Header Export", default="Actor"
     )
@@ -1180,6 +1204,7 @@ def sm64_anim_unregister():
     #Coop
     del bpy.types.Scene.smluaAnimation
     del bpy.types.Scene.perBoneTrans
+    del bpy.types.Scene.perBoneScale
     del bpy.types.Scene.animExportStart
     del bpy.types.Scene.animExportEnd
     del bpy.types.Scene.levelAnimImport
