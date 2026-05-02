@@ -913,7 +913,7 @@ def export_animation_c(
         applyBasicTweaks(decomp)
 
     if combined_props.smlua_anim:
-        (Path(combined_props.smlua_anim_path) / (combined_props.smlua_anim_name + ".lua")).write_text(animation.to_c(anim_props.is_dma))
+        (Path(bpy.context.scene.fast64.sm64.smlua_mod_path) / (combined_props.smlua_anim_name + ".lua")).write_text(animation.to_c(anim_props.is_dma))
         return
 
     anim_directory, geo_directory, header_directory = create_and_get_paths(

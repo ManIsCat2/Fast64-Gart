@@ -469,10 +469,9 @@ def removeTexScrollFiles(exportDir, assetDir):
 
 
 def writeTexScrollFiles(exportDir: str, assetDir: str, scrollData: CData):
-    cProps = bpy.context.scene.fast64.sm64.combined_export
-    forLua = cProps.smlua_texscroll
+    forLua = bpy.context.scene.fast64.sm64.smlua_texscroll
     if forLua:
-        texscrollCPath = os.path.join(cProps.smlua_texscroll_path, (os.path.basename(assetDir) + "_texscroll.lua"))
+        texscrollCPath = os.path.join(bpy.context.scene.fast64.sm64.smlua_mod_path, (os.path.basename(assetDir) + "_texscroll.lua"))
     else:
         texscrollCPath = os.path.join(assetDir, "texscroll.inc.c")
     texscrollHPath = os.path.join(assetDir, "texscroll.inc.h")

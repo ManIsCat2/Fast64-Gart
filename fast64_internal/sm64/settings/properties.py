@@ -91,7 +91,12 @@ class SM64_Properties(PropertyGroup):
     disable_scroll: BoolProperty(name="Disable Scrolling Textures")
     # Coop
     fix_coop_fog: BoolProperty(name="Fix Coop Fog")
+    smlua_mod_path: bpy.props.StringProperty(name="Coop Mod Path", subtype="FILE_PATH", default="")
     add_coop_reverts: BoolProperty(name="Fix Reverts for Coop")
+    smlua_texscroll: bpy.props.BoolProperty(
+        name="Lua Scrolling Textures",
+        description="Scrolls will export to a lua file in the coop mod folder.",
+    )
     refresh_version: EnumProperty(items=enum_refresh_versions, name="Refresh", default="Refresh 16")
     compression_format: EnumProperty(
         items=enum_compression_formats,
@@ -290,6 +295,7 @@ class SM64_Properties(PropertyGroup):
             col.prop(self, "extend_bank_4")
         elif not self.binary_export:
             prop_split(col, self, "decomp_path", "Decomp Path")
+            prop_split(col, self, "smlua_mod_path", "Coop Mod Path")
             directory_ui_warnings(col, self.abs_decomp_path)
         col.separator()
 
@@ -298,6 +304,7 @@ class SM64_Properties(PropertyGroup):
             col.separator()
 
         col.prop(self, "fix_coop_fog")
+        col.prop(self, "smlua_texscroll")
         #col.prop(self, "add_coop_reverts")
 
         col.prop(self, "show_importing_menus")

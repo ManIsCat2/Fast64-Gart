@@ -1939,8 +1939,7 @@ def vertexScrollTemplate(
     scrollDataFields = fScrollData.fields[0]
     if scrollDataFields[0].animType == "None" and scrollDataFields[1].animType == "None":
         return ""
-    cProps = bpy.context.scene.fast64.sm64.combined_export
-    forLua = cProps.smlua_texscroll
+    forLua = bpy.context.scene.fast64.sm64.smlua_texscroll
     void = "local function" if forLua else "void"
     integ = "local" if forLua else "int"
     luaVars = ""
@@ -2776,8 +2775,7 @@ class FModel:
         if len(gfxScrollData.functionCalls) > 0:
             data.append(gfxScrollData)
 
-        cProps = bpy.context.scene.fast64.sm64.combined_export
-        forLua = cProps.smlua_texscroll
+        forLua = bpy.context.scene.fast64.sm64.smlua_texscroll
         data.topLevelScrollFunc = f"scroll_{funcName}"
         if forLua:
             data.source += f"local function {data.topLevelScrollFunc}()\n"
