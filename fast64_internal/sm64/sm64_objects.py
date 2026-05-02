@@ -2082,6 +2082,11 @@ class SM64_CombinedObjectProperties(bpy.types.PropertyGroup):
     level_name: bpy.props.EnumProperty(items=enumLevelNames, name="Level", default="bob")
     custom_level_name: bpy.props.StringProperty(name="custom")
     non_decomp_level: bpy.props.BoolProperty(name="Custom Export Path")
+    smlua_texscroll: bpy.props.BoolProperty(
+        name="Export TexScroll to Lua",
+        description="TexScroll export will export to a lua file",
+    )
+    smlua_texscroll_path: bpy.props.StringProperty(name="Lua TexScroll Path", default="")
     custom_level_path: bpy.props.StringProperty(name="Custom Path", subtype="FILE_PATH")
 
     # actor export header
@@ -2469,8 +2474,11 @@ class SM64_CombinedObjectProperties(bpy.types.PropertyGroup):
         box.operator("object.sm64_export_level", text="Export Level")
 
         box.prop(self, "non_decomp_level")
+        box.prop(self, "smlua_texscroll")
         if self.non_decomp_level:
             prop_split(box, self, "custom_level_path", "Custom Path")
+            if self.smlua_texscroll:
+                prop_split(box, self, "smlua_texscroll_path", "Lua TexScrolls Path")
         else:
             prop_split(box, self, "level_name", "Level")
         if self.is_custom_level:

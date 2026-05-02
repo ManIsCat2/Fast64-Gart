@@ -1939,10 +1939,24 @@ def vertexScrollTemplate(
     scrollDataFields = fScrollData.fields[0]
     if scrollDataFields[0].animType == "None" and scrollDataFields[1].animType == "None":
         return ""
+    cProps = bpy.context.scene.fast64.sm64.combined_export
+    forLua = cProps.smlua_texscroll
+    void = "local function" if forLua else "void"
+    integ = "local" if forLua else "int"
+    luaVars = ""
+    if forLua:
+        for i in range(2):
+            field = "XYZ"[i]
+            axis = ["width", "height"][i]
+            if scrollDataFields[i].animType != "None":
+                luaVars += f"local {name}current{field} = 0\n"
+                if scrollDataFields[i].animType == "Sine":
+                    luaVars += f"local {name}time{field} = 0"
     data = [
-        "void scroll_" + name + "() {",
-        "\tint i = 0;",
-        f"\tint count = {count};",
+        luaVars,
+        void + " scroll_" + name + "() " + ("" if forLua else "{"),
+        f"\t{integ} i = 0;",
+        f"\t{integ} count = {count};",
     ]
     variables = ""
     currentVars = ""
@@ -1954,37 +1968,72 @@ def vertexScrollTemplate(
         field = "XYZ"[i]
         axis = ["width", "height"][i]
         if scrollDataFields[i].animType != "None":
-            data.append(f"\tint {axis} = {fScrollData.dimensions[i]} * 0x20;")
-            currentVars += "\tstatic int current" + field + " = 0;\n\tint delta" + field + ";\n"
-            checkOverflow += "\n".join(
-                (
-                    "\tif (" + absFunc + "(current" + field + ") > " + axis + ") {",
+            data.append(f"\t{integ} {axis} = {fScrollData.dimensions[i]} * 0x20;")
+            if forLua:
+                currentVars += "\tlocal delta" + field + ";\n"
+            else:
+                currentVars += "\tstatic int current" + field + " = 0;\n\tint delta" + field + ";\n"
+            if forLua:
+                checkOverflow += "\n".join(
                     (
-                        f"\t\tdelta{field} -= (int)(absi(current{field}) / {axis}) "
-                        f"* {axis} * {signFunc}(delta{field});"
-                    ),
-                    "\t}",
-                    "",
-                )
-            )
-            scrolling += f"\t\tvertices[i].n.tc[{i}] += delta{field};\n"
-            increaseCurrentDelta += f"\tcurrent{field} += delta{field};"
-            if scrollDataFields[i].animType == "Linear":
-                deltaCalculate += f"\tdelta{field} = (int)({scrollDataFields[i].speed} * 0x20) % {axis};\n"
-            elif scrollDataFields[i].animType == "Sine":
-                currentVars += "\n".join(
-                    (
-                        "\tstatic int time" + field + ";",
-                        "\tfloat amplitude" + field + " = " + str(scrollDataFields[i].amplitude) + ";",
-                        "\tfloat frequency" + field + " = " + str(scrollDataFields[i].frequency) + ";",
-                        "\tfloat offset" + field + " = " + str(scrollDataFields[i].offset) + ";",
+                        "\tif (" + "math.abs" + f"({name}current" + field + ") > " + axis + ") then",
+                        (
+                            f"\t\tdelta{field} = delta{field} - math.s32(math.abs({name}current{field}) / {axis}) "
+                            f"* {axis} * {signFunc}(delta{field});"
+                        ),
+                        "\tend",
                         "",
                     )
                 )
+            else:
+                checkOverflow += "\n".join(
+                    (
+                        "\tif (" + absFunc + "(current" + field + ") > " + axis + ") {",
+                        (
+                            f"\t\tdelta{field} -= (int)(absi(current{field}) / {axis}) "
+                            f"* {axis} * {signFunc}(delta{field});"
+                        ),
+                        "\t}",
+                        "",
+                    )
+                )
+            
+            if forLua:
+                UOrV = "u" if i == 0 else "v"
+                scrolling += f"\t\tlocal v = vtx_get_vertex(vertices, i)\n\t\tv.t{UOrV} = v.t{UOrV} + delta{field};\n"
+                increaseCurrentDelta += f"\t{name}current{field} = {name}current{field} + delta{field};\n"
+            else:
+                scrolling += f"\t\tvertices[i].n.tc[{i}] += delta{field};\n"
+                increaseCurrentDelta += f"\tcurrent{field} += delta{field};"
+            if scrollDataFields[i].animType == "Linear":
+                if forLua:
+                    deltaCalculate += f"\tdelta{field} = math.s32({scrollDataFields[i].speed} * 0x20) % {axis};\n"
+                else:
+                    deltaCalculate += f"\tdelta{field} = (int)({scrollDataFields[i].speed} * 0x20) % {axis};\n"
+            elif scrollDataFields[i].animType == "Sine":
+                if forLua:
+                    currentVars += "\n".join(
+                        (
+                            "\tlocal amplitude" + field + " = " + str(scrollDataFields[i].amplitude) + ";",
+                            "\tlocal frequency" + field + " = " + str(scrollDataFields[i].frequency) + ";",
+                            "\tlocal offset" + field + " = " + str(scrollDataFields[i].offset) + ";",
+                            "",
+                        )
+                    )
+                else:
+                    currentVars += "\n".join(
+                        (
+                            "\tstatic int time" + field + ";",
+                            "\tfloat amplitude" + field + " = " + str(scrollDataFields[i].amplitude) + ";",
+                            "\tfloat frequency" + field + " = " + str(scrollDataFields[i].frequency) + ";",
+                            "\tfloat offset" + field + " = " + str(scrollDataFields[i].offset) + ";",
+                            "",
+                        )
+                    )
                 deltaCalculate += (
                     "\tdelta"
                     + field
-                    + " = (int)(amplitude"
+                    + (" = math.s32(amplitude" if forLua else " = (int)(amplitude")
                     + field
                     + " * frequency"
                     + field
@@ -1992,7 +2041,7 @@ def vertexScrollTemplate(
                     + cosFunc
                     + "((frequency"
                     + field
-                    + " * time"
+                    + (f"* {name}time" if forLua else " * time")
                     + field
                     + " + offset"
                     + field
@@ -2001,12 +2050,15 @@ def vertexScrollTemplate(
                 # Conversion from s10.5 to u16
                 # checkOverflow += '\tif (frequency' + field + ' * current' + field + ' / 2 > 6.28318530718) {\n' +\
                 # 	'\t\tcurrent' + field + ' -= 6.28318530718 * 2 / frequency' + field + ';\n\t}\n'
-                increaseCurrentDelta += "\ttime" + field + " += 1;"
+                if forLua:
+                    increaseCurrentDelta += f"\t{name}time{field} = {name}time{field}" + " + 1;"
+                else:
+                    increaseCurrentDelta += "\ttime" + field + " += 1;"
             elif scrollDataFields[i].animType == "Noise":
                 deltaCalculate += (
                     "\tdelta"
                     + field
-                    + " = (int)("
+                    + (" = math.s32(" if forLua else " = (int)(")
                     + str(scrollDataFields[i].noiseAmplitude)
                     + " * 0x20 * "
                     + randomFloatFunc
@@ -2022,14 +2074,14 @@ def vertexScrollTemplate(
         (
             "\n".join(data),
             variables,
-            currentVars + "\tVtx *vertices = " + segToVirtualFunc + "(" + name + ");",
+            currentVars + "\tlocal vertices = " + "vtx_get_from_name" + "('" + name + "');" if forLua else currentVars + "\tVtx *vertices = " + segToVirtualFunc + "(" + name + ");",
             "",
             deltaCalculate,
             checkOverflow,
-            "\tfor (i = 0; i < count; i++) {",
-            scrolling + "\t}",
+            "\tfor i = 0, count - 1 do" if forLua else "\tfor (i = 0; i < count; i++) {",
+            scrolling + "\tend" if forLua else scrolling + "\t}",
             increaseCurrentDelta,
-            "}",
+            "end" if forLua else "}",
             "",
             "",
         )
@@ -2724,13 +2776,24 @@ class FModel:
         if len(gfxScrollData.functionCalls) > 0:
             data.append(gfxScrollData)
 
+        cProps = bpy.context.scene.fast64.sm64.combined_export
+        forLua = cProps.smlua_texscroll
         data.topLevelScrollFunc = f"scroll_{funcName}"
-        data.source += f"void {data.topLevelScrollFunc}() {{\n"
+        if forLua:
+            data.source += f"local function {data.topLevelScrollFunc}()\n"
+           # data.source += f"\tif gNetworkPlayers[0].currLevelNum == LEVEL_{funcName.upper()} then\n"
+        else:
+            data.source += f"void {data.topLevelScrollFunc}() {{\n"
         for scrollFunc in data.functionCalls:
             data.source += f"\t{scrollFunc}();\n"
-        data.source += f"}};\n"
+        #if forLua:
+        #    data.source += "\tend\n"
+        data.source += "end\n" if forLua else f"}};\n"
 
         data.header += f"extern void {data.topLevelScrollFunc}();\n"
+
+        if forLua:
+            data.source += f"\nhook_event(HOOK_UPDATE, {data.topLevelScrollFunc})"
         return data
 
     def to_c_vertex_scroll(self, gfxFormatter: GfxFormatter) -> CScrollData:
