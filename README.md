@@ -2,6 +2,8 @@
 
 This is a fast64 fork, it adds alot of sm64coopdx specific stuff so you can make models easier!
 
+*Confirmed working on Blender v4.2.20.*
+
 ## F3DEX2E Custom Microcode
 This is the microcode the sm64coopdx uses, this ucode supports Packed Normals and Fresnel, both have the exact same functionallity as their F3DEX3 version, This microcode is also needed to get Coop Recolorability options to show up.
 
@@ -29,8 +31,6 @@ Note that these support binding to both Light and Ambient:
 
 
 # Fast64
-
-This requires Blender 3.2+. Blender 4.0+ is recommended.
 
 Forked from [kurethedead/fast64 on BitBucket](https://bitbucket.org/kurethedead/fast64/src).
 
