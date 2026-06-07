@@ -112,6 +112,7 @@ def set_if_different(owner, prop: str, value):
 
 def on_flag_update(self: "SM64_AnimHeaderProperties", context: Context):
     use_int = context.scene.fast64.sm64.binary_export or dma_structure_context(context)
+    context.scene.fast64.sm64.combined_export.anim_full_translate = self.bone_trans
     self.set_flags(self.get_flags(not use_int), set_custom=not self.use_custom_flags)
 
 
@@ -186,6 +187,12 @@ class SM64_AnimHeaderProperties(PropertyGroup):
         description="(ANIM_FLAG_NO_TRANS/ANIM_FLAG_6)\n"
         "When disabled, the animation translation will not be used during rendering\n"
         "(shadows included), the translation will still be exported and included",
+        update=on_flag_update,
+    )
+    bone_trans: BoolProperty(
+        name="Full Translation",
+        description="(ANIM_FLAG_BONE_TRANS)\n"
+        "When enabled, the whole armature will translate during rendering",
         update=on_flag_update,
     )
     # Binary
@@ -279,6 +286,9 @@ class SM64_AnimHeaderProperties(PropertyGroup):
         no_row = trans_row.row()
         no_row.enabled = not self.only_vertical and not self.only_horizontal
         no_row.prop(self, "no_trans", invert_checkbox=True, text="Translate", toggle=1)
+
+        bone_row = trans_row.row()
+        bone_row.prop(self, "bone_trans", text="Full Translate", toggle=1)
 
         vert_row = trans_row.row()
         vert_row.prop(self, "only_vertical", text="Only Vertical", toggle=1)

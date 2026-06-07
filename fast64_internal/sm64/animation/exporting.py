@@ -122,7 +122,12 @@ def read_quick(actions, max_frames, anim_owners, trans_values, rot_values):
     for action, max_frame, action_trans, action_rot in zip(actions, max_frames, trans_values, rot_values):
         quats = np.empty((4, max_frame), dtype=np.float32)
 
-        get_entire_fcurve_data(action, anim_owners[0], "location", max_frame, action_trans)
+        if bpy.context.scene.fast64.sm64.combined_export.anim_full_translate:
+            for bone_index, anim_owner in enumerate(anim_owners):
+                index = bone_index * 3
+                get_entire_fcurve_data(action, anim_owner, "location", max_frame, action_trans[index : index + 3])
+        else:
+            get_entire_fcurve_data(action, anim_owners[0], "location", max_frame, action_trans)
 
         for bone_index, anim_owner in enumerate(anim_owners):
             mode = anim_owner.rotation_mode
@@ -176,8 +181,14 @@ def read_full(actions, max_frames, anim_owners, trans_values, rot_values, obj, i
                         local_matrix = obj.convert_space(
                             pose_bone=anim_owner, matrix=anim_owner.matrix, from_space="POSE", to_space="LOCAL"
                         )
-                    if bone_index == 0:
-                        action_trans[0:3, frame] = list(local_matrix.to_translation())
+                    
+                    if bpy.context.scene.fast64.sm64.combined_export.anim_full_translate:
+                        index = bone_index * 3
+                        action_trans[index : index + 3, frame] = list(local_matrix.to_translation())
+                    else:
+                        if bone_index == 0:
+                            action_trans[0:3, frame] = list(local_matrix.to_translation())
+                            
                     index = bone_index * 3
                     action_rot[index : index + 3, frame] = list(local_matrix.to_euler())
     finally:
@@ -202,7 +213,13 @@ def get_animation_pairs(
         return {}
 
     max_frames = [get_action_props(action).get_max_frame(action) for action in actions]
-    trans_values = [np.zeros((3, max_frame), dtype=np.float32) for max_frame in max_frames]
+    
+    if bpy.context.scene.fast64.sm64.combined_export.anim_full_translate:
+        trans_channels = len(anim_owners) * 3
+    else:
+        trans_channels = 3
+        
+    trans_values = [np.zeros((trans_channels, max_frame), dtype=np.float32) for max_frame in max_frames]
     rot_values = [np.zeros((len(anim_owners) * 3, max_frame), dtype=np.float32) for max_frame in max_frames]
 
     if quick_read:
@@ -215,8 +232,17 @@ def get_animation_pairs(
         action_trans = trim_duplicates_vectorized(np.round(action_trans * sm64_scale).astype(np.int16))
         action_rot = trim_duplicates_vectorized(np.round(np.degrees(action_rot) * (2**16 / 360.0)).astype(np.int16))
 
-        pairs = [SM64_AnimPair(values) for values in action_trans]
-        pairs.extend([SM64_AnimPair(values) for values in action_rot])
+        if bpy.context.scene.fast64.sm64.combined_export.anim_full_translate:
+            pairs = []
+            for bone_index in range(len(anim_owners)):
+                t_idx = bone_index * 3
+                r_idx = bone_index * 3
+                pairs.extend([SM64_AnimPair(values) for values in action_trans[t_idx : t_idx + 3]])
+                pairs.extend([SM64_AnimPair(values) for values in action_rot[r_idx : r_idx + 3]])
+        else:
+            pairs = [SM64_AnimPair(values) for values in action_trans]
+            pairs.extend([SM64_AnimPair(values) for values in action_rot])
+            
         action_pairs[action] = pairs
 
     return action_pairs

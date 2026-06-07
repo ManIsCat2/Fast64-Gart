@@ -2120,6 +2120,11 @@ class SM64_CombinedObjectProperties(bpy.types.PropertyGroup):
         description="Animation export will export to smlua animation format",
     )
     smlua_anim_name: bpy.props.StringProperty(name="Lua Anim Name", default="anim_walking")
+    anim_full_translate: bpy.props.BoolProperty(
+        name=".",
+        description=".",
+        default=False,
+    )
     insertable_directory: bpy.props.StringProperty(name="Directory Path", subtype="FILE_PATH")
 
     # export options
