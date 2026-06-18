@@ -92,7 +92,7 @@ class SM64_Properties(PropertyGroup):
     # Coop
     fix_coop_fog: BoolProperty(name="Fix Coop Fog")
     smlua_mod_path: bpy.props.StringProperty(name="Coop Mod Path", subtype="FILE_PATH", default="")
-    add_coop_reverts: BoolProperty(name="Fix Reverts for Coop")
+    add_coop_reverts: BoolProperty(name="Add Coop Reverts")
     smlua_texscroll: bpy.props.BoolProperty(
         name="Lua Scrolling Textures",
         description="Scrolls will export to a lua file in the coop mod folder.",
@@ -305,7 +305,7 @@ class SM64_Properties(PropertyGroup):
 
         col.prop(self, "fix_coop_fog")
         col.prop(self, "smlua_texscroll")
-        #col.prop(self, "add_coop_reverts")
+        col.prop(self, "add_coop_reverts")
 
         col.prop(self, "show_importing_menus")
         if self.show_importing_menus:

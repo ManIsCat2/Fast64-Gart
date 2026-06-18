@@ -97,6 +97,10 @@ from ..f3d.f3d_gbi import (
     DLFormat,
     SPEndDisplayList,
     SPDisplayList,
+    DPLoadBlock,
+    DPSetTile,
+    DPSetTextureImage,
+    DPSetTileSize
 )
 
 from .sm64_geolayout_classes import (
@@ -345,7 +349,10 @@ def append_revert_to_geolayout(graph: GeolayoutGraph, f_model: SM64Model):
     material_revert = GfxList(
         f_model.name + "_" + "material_revert_render_settings", GfxListTag.MaterialRevert, f_model.DLFormat
     )
-    revertMatAndEndDraw(material_revert, [DPSetEnvColor(0xFF, 0xFF, 0xFF, 0xFF), DPSetAlphaCompare("G_AC_NONE")])
+    if bpy.context.scene.fast64.sm64.add_coop_reverts:
+        revertMatAndEndDraw(material_revert, [DPSetEnvColor(0xFF, 0xFF, 0xFF, 0xFF), DPSetAlphaCompare("G_AC_NONE"), DPSetTextureImage("G_IM_FMT_RGBA", "G_IM_SIZ_16b_LOAD_BLOCK", 1, 0), DPSetTile("G_IM_FMT_RGBA", "G_IM_SIZ_16b_LOAD_BLOCK", 0, 0, 7, 0, ["G_TX_WRAP", "G_TX_NOMIRROR"], 0, 0, ["G_TX_WRAP ", "G_TX_NOMIRROR"], 0, 0),DPLoadBlock(7, 0, 0, 1023, 256),DPSetTile('G_IM_FMT_RGBA', 'G_IM_SIZ_16b', 8, 0, 0, 0, ['G_TX_CLAMP' , 'G_TX_NOMIRROR'], 5, 0, ['G_TX_CLAMP' , 'G_TX_NOMIRROR'], 5, 0),DPSetTileSize(0, 0, 0, 124, 124),DPSetTextureImage("G_IM_FMT_RGBA", "G_IM_SIZ_16b_LOAD_BLOCK", 1, 0),DPSetTile('G_IM_FMT_RGBA', 'G_IM_SIZ_16b_LOAD_BLOCK', 0, 256, 6, 0, ['G_TX_WRAP' ,'G_TX_NOMIRROR'], 0, 0, ['G_TX_WRAP' ,'G_TX_NOMIRROR'], 0, 0),DPLoadBlock(6, 0, 0, 1023, 256),DPSetTile('G_IM_FMT_RGBA', 'G_IM_SIZ_16b', 8, 256, 1, 0, ['G_TX_CLAMP' ,'G_TX_NOMIRROR'], 5, 0,  ['G_TX_CLAMP' ,'G_TX_NOMIRROR'], 5, 0),DPSetTileSize(1, 0, 0, 124, 124)])
+    else:
+        revertMatAndEndDraw(material_revert, [DPSetEnvColor(0xFF, 0xFF, 0xFF, 0xFF), DPSetAlphaCompare("G_AC_NONE")])
 
     # walk the geo layout graph to find the last used DL for each layer
     # each switch child will be considered a last used DL, unless subsequent
