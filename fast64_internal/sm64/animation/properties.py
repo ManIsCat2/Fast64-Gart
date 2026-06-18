@@ -113,6 +113,7 @@ def set_if_different(owner, prop: str, value):
 def on_flag_update(self: "SM64_AnimHeaderProperties", context: Context):
     use_int = context.scene.fast64.sm64.binary_export or dma_structure_context(context)
     context.scene.fast64.sm64.combined_export.anim_full_translate = self.bone_trans
+    context.scene.fast64.sm64.combined_export.anim_scale = self.bone_scale
     self.set_flags(self.get_flags(not use_int), set_custom=not self.use_custom_flags)
 
 
@@ -193,6 +194,12 @@ class SM64_AnimHeaderProperties(PropertyGroup):
         name="Full Translation",
         description="(ANIM_FLAG_BONE_TRANS)\n"
         "When enabled, the whole armature will translate during rendering",
+        update=on_flag_update,
+    )
+    bone_scale: BoolProperty(
+        name="Scaling",
+        description="(ANIM_FLAG_BONE_SCALE)\n"
+        "When enabled, the armature will scale during rendering",
         update=on_flag_update,
     )
     # Binary
@@ -279,6 +286,9 @@ class SM64_AnimHeaderProperties(PropertyGroup):
         row.prop(self, "no_loop", invert_checkbox=True, text="Loop", toggle=1)
         row.prop(self, "backwards", toggle=1)
         row.prop(self, "no_acceleration", invert_checkbox=True, text="Acceleration", toggle=1)
+
+        btrans_row = row.row()
+        btrans_row.prop(self, "bone_trans", text="Full Translate", toggle=1)
         if self.no_acceleration and self.backwards:
             col.label(text="Backwards has no porpuse without acceleration.", icon="INFO")
 
@@ -288,7 +298,8 @@ class SM64_AnimHeaderProperties(PropertyGroup):
         no_row.prop(self, "no_trans", invert_checkbox=True, text="Translate", toggle=1)
 
         bone_row = trans_row.row()
-        bone_row.prop(self, "bone_trans", text="Full Translate", toggle=1)
+        #bone_row.enabled = self.bone_trans
+        bone_row.prop(self, "bone_scale", text="Scaling", toggle=1)
 
         vert_row = trans_row.row()
         vert_row.prop(self, "only_vertical", text="Only Vertical", toggle=1)

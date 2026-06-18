@@ -2125,6 +2125,11 @@ class SM64_CombinedObjectProperties(bpy.types.PropertyGroup):
         description=".",
         default=False,
     )
+    anim_scale: bpy.props.BoolProperty(
+        name=".",
+        description=".",
+        default=False,
+    )
     insertable_directory: bpy.props.StringProperty(name="Directory Path", subtype="FILE_PATH")
 
     # export options

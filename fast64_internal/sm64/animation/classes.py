@@ -158,6 +158,7 @@ class SM64_AnimFlags(IntFlag):
     ANIM_FLAG_6 = (6, "no_trans")
     ANIM_FLAG_7 = 7
     ANIM_FLAG_BONE_TRANS = (8, "bone_trans")
+    ANIM_FLAG_BONE_SCALE = (9, "bone_scale")
 
     ANIM_FLAG_BACKWARD = (1, "backwards")  # refresh 16
 
