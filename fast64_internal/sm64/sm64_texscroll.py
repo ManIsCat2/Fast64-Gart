@@ -1,7 +1,8 @@
+from pathlib import Path
 import os, re, bpy
-from ..utility import PluginError, writeIfNotFound, getDataFromFile, saveDataToFile, CScrollData, CData
+from ..utility import PluginError, getDataFromFile, saveDataToFile, CScrollData, CData
 from .c_templates.tile_scroll import tile_scroll_c, tile_scroll_h
-from .sm64_utility import getMemoryCFilePath
+from .sm64_utility import END_IF_FOOTER, ModifyFoundDescriptor, getMemoryCFilePath, write_or_delete_if_found
 
 # This is for writing framework for scroll code.
 # Actual scroll code found in f3d_gbi.py (FVertexScrollData)
@@ -78,7 +79,16 @@ def writeSegmentROMTable(baseDir):
         memFile.close()
 
     # Add extern definition of segment table
-    writeIfNotFound(os.path.join(baseDir, "src/game/memory.h"), "\nextern uintptr_t sSegmentROMTable[32];", "#endif")
+    write_or_delete_if_found(
+        Path(baseDir, "src", "game", "memory.h"),
+        [
+            ModifyFoundDescriptor(
+                "extern uintptr_t sSegmentROMTable[32];", r"extern\h*uintptr_t\h*sSegmentROMTable\[.*?\]\h*?;"
+            )
+        ],
+        path_must_exist=True,
+        footer=END_IF_FOOTER,
+    )
 
 
 def writeScrollTextureCall(path, include, callString):
@@ -459,13 +469,18 @@ def removeTexScrollFiles(exportDir, assetDir):
 
 
 def writeTexScrollFiles(exportDir: str, assetDir: str, scrollData: CData):
-    texscrollCPath = os.path.join(assetDir, "texscroll.inc.c")
+    forLua = bpy.context.scene.fast64.sm64.smlua_texscroll
+    if forLua:
+        texscrollCPath = os.path.join(bpy.context.scene.fast64.sm64.smlua_mod_path, (os.path.basename(assetDir) + "_texscroll.lua"))
+    else:
+        texscrollCPath = os.path.join(assetDir, "texscroll.inc.c")
     texscrollHPath = os.path.join(assetDir, "texscroll.inc.h")
 
     texscrollCFile = open(texscrollCPath, "w", newline="\n")
     texscrollCFile.write(scrollData.source)
     texscrollCFile.close()
 
-    texscrollHFile = open(texscrollHPath, "w", newline="\n")
-    texscrollHFile.write(scrollData.header)
-    texscrollHFile.close()
+    if not forLua:
+        texscrollHFile = open(texscrollHPath, "w", newline="\n")
+        texscrollHFile.write(scrollData.header)
+        texscrollHFile.close()

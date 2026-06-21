@@ -1,8 +1,22 @@
+import bmesh
+import bpy
+import mathutils
+import re
+import math
+import traceback
+import ast
+
 from typing import Union, Optional, Callable, Any, TYPE_CHECKING
-import bmesh, bpy, mathutils, re, math, traceback
 from mathutils import Vector
 from bpy.utils import register_class, unregister_class
+
+# TODO: remove `import *`
+from ..utility import *
 from .f3d_gbi import *
+
+from .f3d_writer import BufferVertex, F3DVert
+from .f3d_material_helpers import F3DMaterial_UpdateLock
+
 from .f3d_material import (
     createF3DMat,
     update_preset_manual,
@@ -13,10 +27,6 @@ from .f3d_material import (
     update_node_values_of_material,
     F3DMaterialHash,
 )
-from .f3d_writer import BufferVertex, F3DVert
-from ..utility import *
-import ast
-from .f3d_material_helpers import F3DMaterial_UpdateLock
 
 if TYPE_CHECKING:
     from .f3d_material import RDPSettings
@@ -91,8 +101,7 @@ def F3DtoBlenderObject(romfile, startAddress, scene, newname, transformMatrix, s
     mesh.update()
 
     if shadeSmooth:
-        bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
+        selectSingleObject(obj)
         bpy.ops.object.shade_smooth()
 
     return obj
@@ -362,15 +371,16 @@ def math_eval(s, f3d):
     def _eval(node):
         if isinstance(node, ast.Expression):
             return _eval(node.body)
-        elif isinstance(node, ast.Str):
-            return node.s
+        elif isinstance(node, ast.Constant):
+            if isinstance(node.value, str):
+                return node.value
+            elif isinstance(node.value, int):
+                return int(node.value)
+            else:
+                raise Exception("Unsupported constant type {}".format(type(node.value)))
         elif isinstance(node, ast.Name):
             if hasattr(f3d, node.id):
                 return getattr(f3d, node.id)
-            else:
-                return node.id
-        elif isinstance(node, ast.Num):
-            return node.n
         elif isinstance(node, ast.UnaryOp):
             if isinstance(node.op, ast.USub):
                 return -1 * _eval(node.operand)
@@ -847,16 +857,22 @@ class F3DContext:
         else:
             return getattr(self.f3d, self.f3d.IM_SIZ[size] + suffix)
 
-    def getImagePathFromInclude(self, path):
+    def getImagePathFromInclude(self, path, skip_base_path: bool = False):
         if self.basePath is None:
             raise PluginError("Cannot load texture from " + path + " without any provided base path.")
 
         imagePathRelative = path[:-5] + "png"
+
+        # OoT already got the full path so no need to do that
+        if skip_base_path:
+            return imagePathRelative
+
         imagePath = os.path.join(self.basePath, imagePathRelative)
 
         # handle custom imports, where relative paths don't make sense
         if not os.path.exists(imagePath):
             imagePath = os.path.join(self.basePath, os.path.basename(imagePathRelative))
+
         return imagePath
 
     def getVTXPathFromInclude(self, path):
@@ -1378,7 +1394,18 @@ class F3DContext:
         self.tmemDict[tileSettings.tmem] = self.currentTextureName
         self.materialChanged = True
 
+    def get_file_macro_value(self, macro: str, filedata: str):
+        match = re.search(rf"#\s*define\s+{macro}\s+([0-9a-fA-FxX]*)", filedata, re.DOTALL)
+        assert match is not None, f"match is null for {macro}"
+        return match.group(1)
+
     def loadMultiBlock(self, params: "list[str | int]", dlData: str, is4bit: bool):
+        # handles OoT's macros
+        if "WIDTH" in params[5]:
+            params[5] = self.get_file_macro_value(params[5], dlData)
+        if "HEIGHT" in params[6]:
+            params[6] = self.get_file_macro_value(params[6], dlData)
+
         width = math_eval(params[5], self.f3d)
         height = math_eval(params[6], self.f3d)
         siz = params[4]
@@ -1852,7 +1879,7 @@ class F3DContext:
             raise PluginError("Attempting to delete material context that is None.")
 
     # if deleteMaterialContext is False, then manually call self.deleteMaterialContext() later.
-    def createMesh(self, obj, removeDoubles, importNormals, callDeleteMaterialContext: bool):
+    def createMesh(self, obj: bpy.types.Object, removeDoubles, importNormals, callDeleteMaterialContext: bool):
         mesh = obj.data
         if len(self.verts) % 3 != 0:
             print(len(self.verts))
@@ -1890,19 +1917,30 @@ class F3DContext:
             # There will be one loop for every vertex
             uv_layer[i].uv = self.verts[i].uv
 
-        color_layer = mesh.vertex_colors.new(name="Col").data
-        for i in range(len(mesh.loops)):
-            color_layer[i].color = self.verts[i].rgb.to_4d()
+        # The mesh.vertex_colors API is deprecated since Blender 3.2,
+        # and its usage by fast64 here breaks in Blender 5.1 somehow.
+        # (can't replicate in simple cases)
+        if bpy.app.version < (3, 2, 0):
+            color_layer = mesh.vertex_colors.new(name="Col").data
+            for i in range(len(mesh.loops)):
+                color_layer[i].color = self.verts[i].rgb.to_4d()
 
-        alpha_layer = mesh.vertex_colors.new(name="Alpha").data
-        for i in range(len(mesh.loops)):
-            alpha_layer[i].color = [self.verts[i].alpha] * 3 + [1]
+            alpha_layer = mesh.vertex_colors.new(name="Alpha").data
+            for i in range(len(mesh.loops)):
+                alpha_layer[i].color = [self.verts[i].alpha] * 3 + [1]
+        else:
+            col_attr = mesh.color_attributes.new("Col", "BYTE_COLOR", "CORNER")
+            for i in range(len(mesh.loops)):
+                col_attr.data[i].color = (*self.verts[i].rgb, 1)
+
+            alpha_attr = mesh.color_attributes.new("Alpha", "BYTE_COLOR", "CORNER")
+            for i in range(len(mesh.loops)):
+                a = self.verts[i].alpha
+                alpha_attr.data[i].color = (a, a, a, 1)
 
         if bpy.context.mode != "OBJECT":
             bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj
+        selectSingleObject(obj)
 
         for material in self.materials:
             obj.data.materials.append(material)
@@ -1976,6 +2014,9 @@ def parseDLData(dlData: str, dlName: str):
 
     dlCommandData = matchResult.group(1)
 
+    if "#include" in dlCommandData:
+        dlCommandData = get_include_data(dlCommandData, strip=True)
+
     # recursive regex not available in re
     # dlCommands = [(match.group(1), [param.strip() for param in match.group(2).split(",")]) for match in \
     # 	re.findall('(gs[A-Za-z0-9\_]*)\(((?>[^()]|(?R))*)\)', dlCommandData, re.DOTALL)]
@@ -1998,8 +2039,8 @@ def parseVertexData(dlData: str, vertexDataName: str, f3dContext: F3DContext):
     pathMatch = re.search(r'\#include\s*"([^"]*)"', data)
     if pathMatch is not None:
         path = pathMatch.group(1)
-        if bpy.context.scene.gameEditorMode == "OOT":
-            path = f"{bpy.context.scene.fast64.oot.get_extracted_path()}/{path}"
+        if bpy.context.scene.gameEditorMode in {"OOT", "MM"}:
+            path = str(oot_get_assets_path(path, check_exists=False))
         data = readFile(f3dContext.getVTXPathFromInclude(path))
 
     f3d = f3dContext.f3d
@@ -2087,7 +2128,9 @@ def CI4toRGBA32(value):
 
 def parseTextureData(dlData, textureName, f3dContext, imageFormat, imageSize, width, isLUT, f3d):
     matchResult = re.search(
-        r"([A-Za-z0-9\_]+)\s*" + re.escape(textureName) + r"\s*\[\s*[0-9a-fA-Fx]*\s*\]\s*=\s*\{([^\}]*)\s*\}\s*;\s*",
+        r"([A-Za-z0-9\_]+)\s*"
+        + re.escape(textureName)
+        + r"\s*\[\s*[0-9a-zA-Z_\(\),\s]*\s*\]\s*=\s*\{([^\}]*)\s*\}\s*;\s*",
         dlData,
         re.DOTALL,
     )
@@ -2102,9 +2145,10 @@ def parseTextureData(dlData, textureName, f3dContext, imageFormat, imageSize, wi
     pathMatch = re.search(r'\#include\s*"(.*?)"', data, re.DOTALL)
     if pathMatch is not None:
         path = pathMatch.group(1)
-        if bpy.context.scene.gameEditorMode == "OOT":
-            path = f"{bpy.context.scene.fast64.oot.get_extracted_path()}/{path}"
-        originalImage = bpy.data.images.load(f3dContext.getImagePathFromInclude(path))
+        is_oot = bpy.context.scene.gameEditorMode in {"OOT", "MM"}
+        if is_oot:
+            path = str(oot_get_assets_path(path, check_exists=False))
+        originalImage = bpy.data.images.load(f3dContext.getImagePathFromInclude(path, is_oot))
         image = originalImage.copy()
         image.pack()
         image.filepath = ""
@@ -2259,24 +2303,41 @@ def getImportData(filepaths):
 
 
 def parseMatrices(sceneData: str, f3dContext: F3DContext, importScale: float = 1):
-    for match in re.finditer(rf"Mtx\s*([a-zA-Z0-9\_]+)\s*=\s*\{{(.*?)\}}\s*;", sceneData, flags=re.DOTALL):
-        name = "&" + match.group(1)
-        values = [hexOrDecInt(value.strip()) for value in match.group(2).split(",") if value.strip() != ""]
-        trueValues = []
-        for n in range(8):
-            valueInt = int.from_bytes(values[n].to_bytes(4, "big", signed=True), "big", signed=False)
-            valueFrac = int.from_bytes(values[n + 8].to_bytes(4, "big", signed=True), "big", signed=False)
-            int1 = values[n] >> 16
-            int2 = int.from_bytes((valueInt & (2**16 - 1)).to_bytes(2, "big", signed=False), "big", signed=True)
-            frac1 = valueFrac >> 16
-            frac2 = valueFrac & (2**16 - 1)
-            trueValues.append(int1 + (frac1 / (2**16)))
-            trueValues.append(int2 + (frac2 / (2**16)))
+    finditer = list(re.finditer(rf"Mtx\s*([a-zA-Z0-9\_]+)\s*=\s*\{{(.*?)\}}\s*;", sceneData, flags=re.DOTALL))
 
+    # newer assets system
+    if len(finditer) == 0:
+        finditer = list(re.finditer(r"Mtx\s*([a-zA-Z0-9\_]+)\s*=\s*(.*?)\s*;", sceneData, flags=re.DOTALL))
+
+    for match in finditer:
+        name = "&" + match.group(1)
+        data = match.group(2)
         matrix = mathutils.Matrix()
-        for i in range(4):
-            for j in range(4):
-                matrix[j][i] = trueValues[i * 4 + j]
+
+        if "#include" in data:
+            match = re.search(r".*\((.*?)\)", get_include_data(data, strip=True), re.DOTALL | re.MULTILINE)
+            assert match is not None
+            raw_matrix = match.group(1).split(",")
+            for i in range(4):
+                for j in range(4):
+                    matrix[i][j] = float(raw_matrix[i * 4 + j].removesuffix("f"))
+        else:
+            values = [hexOrDecInt(value.strip()) for value in data.split(",") if value.strip() != ""]
+
+            trueValues = []
+            for n in range(8):
+                valueInt = int.from_bytes(values[n].to_bytes(4, "big", signed=True), "big", signed=False)
+                valueFrac = int.from_bytes(values[n + 8].to_bytes(4, "big", signed=True), "big", signed=False)
+                int1 = values[n] >> 16
+                int2 = int.from_bytes((valueInt & (2**16 - 1)).to_bytes(2, "big", signed=False), "big", signed=True)
+                frac1 = valueFrac >> 16
+                frac2 = valueFrac & (2**16 - 1)
+                trueValues.append(int1 + (frac1 / (2**16)))
+                trueValues.append(int2 + (frac2 / (2**16)))
+
+            for i in range(4):
+                for j in range(4):
+                    matrix[j][i] = trueValues[i * 4 + j]
 
         f3dContext.addMatrix(name, mathutils.Matrix.Scale(importScale, 4) @ matrix)
 
