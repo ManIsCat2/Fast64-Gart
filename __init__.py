@@ -30,6 +30,8 @@ from .fast64_internal.utility_anim import utility_anim_register, utility_anim_un
 from .fast64_internal.mk64 import MK64_Properties, mk64_register, mk64_unregister
 from .fast64_internal.mk64.mk64_constants import mk64_world_defaults
 
+from .fast64_internal.coop import coop_register, coop_unregister
+
 from .fast64_internal.f3d.f3d_gbi import get_F3D_GBI
 from .fast64_internal.f3d.f3d_material import (
     F3D_MAT_CUR_VERSION,
@@ -479,6 +481,7 @@ def register():
     sm64_register(True)
     oot_register(True)
     mk64_register(True)
+    coop_register()
 
     gltf_extension_register()
 
@@ -528,6 +531,7 @@ def unregister():
     sm64_unregister(True)
     oot_unregister(True)
     mk64_unregister(True)
+    coop_unregister()
     mat_unregister()
     gltf_extension_unregister()
     bsdf_conv_unregister()
