@@ -13,28 +13,30 @@ def fix_texture(tex):
     pixels = img.pixels
     threshold = bpy.context.scene.cutout_alpha_threshold
 
+    visible = [x > threshold for i, x in enumerate(pixels) if i % 4 == 3]
+
+    def clamp_dimension(n, size, axis):
+        if n < 0:
+            if axis.clamp:
+                return 0
+            elif axis.mirror:
+                return -n - 1
+            else:
+                return n + size
+        elif n >= size:
+            if axis.mirror:
+                return size * 2 - n - 1
+            elif axis.clamp:
+                return size - 1
+            else:
+                return n % size
+
+        return n
+
     def try_copy_rgb(x, y, src):
-        def clamp_dimension(n, size, axis):
-            if n < 0:
-                if axis.clamp:
-                    return 0
-                elif axis.mirror:
-                    return -n - 1
-                else:
-                    return n + size
-            elif n >= size:
-                if axis.mirror:
-                    return size * 2 - n - 1
-                elif axis.clamp:
-                    return size - 1
-                else:
-                    return n % size
-
-            return n
-
         dst = (clamp_dimension(x, w, tex.S) + clamp_dimension(y, h, tex.T)*w)*img.channels
 
-        if threshold < pixels[dst+3]:
+        if pixels[dst+3] > threshold:
             return
         for c in range(3):
             pixels[dst+c] = pixels[src+c]
@@ -42,15 +44,28 @@ def fix_texture(tex):
     for y in range(h):
         for x in range(w):
             i = (x + y*w)*img.channels
-            if threshold < pixels[i+3]:
-                try_copy_rgb(x-1, y-1, i)
-                try_copy_rgb(x-1, y,   i)
-                try_copy_rgb(x-1, y+1, i)
-                try_copy_rgb(x,   y-1, i)
-                try_copy_rgb(x,   y+1, i)
-                try_copy_rgb(x+1, y-1, i)
-                try_copy_rgb(x+1, y,   i)
-                try_copy_rgb(x+1, y+1, i)
+
+            if visible[x + y*w]:
+                dirs = {
+                    (-1,-1):True,( 0,-1):True,( 1,-1):True,
+                    (-1, 0):True,             ( 1, 0):True,
+                    (-1, 1):True,( 0, 1):True,( 1, 1):True,
+                }
+
+                for dir in [x for x in dirs.keys() if 0 in x]:
+                    pos = clamp_dimension(x+dir[0], w, tex.S) + clamp_dimension(y+dir[1], h, tex.T)*w
+                    if visible[pos]:
+                        dirs[dir] = False
+                        if dir[0] == 0:
+                            dirs[(-1,dir[1])] = False
+                            dirs[( 1,dir[1])] = False
+                        else:
+                            dirs[(dir[0],-1)] = False
+                            dirs[(dir[0], 1)] = False
+
+                for dir, do in dirs.items():
+                    if do:
+                        try_copy_rgb(x+dir[0], y+dir[1], i)
 
     img.update()
     
@@ -123,7 +138,6 @@ class Coop_CutoutFixPanel(bpy.types.Panel):
         col.operator("object.custom_sm64_cutout_fix_function", text="Fix All Materials")
         col.operator("object.custom_sm64_cutout_fix_function_object", text="Fix Active Object Materials")
         col.operator("object.custom_sm64_cutout_fix_function_material", text="Fix Selected Material")
-
 
 classes = (
     Coop_CutoutFixOperator,
