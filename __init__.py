@@ -73,7 +73,7 @@ from .fast64_internal.gltf_extension import (
 bl_info = {
     "name": "Fast64 Gart Edition (unstable)",
     "version": (2, 6, 0),
-    "author": "kurethedead (Gart edition by ManIsCat)",
+    "author": "kurethedead (Gart edition by ManIsCat2)",
     "location": "3DView",
     "description": "Plugin for exporting F3D display lists and other game data related to Nintendo 64 games.",
     "category": "Import-Export",
